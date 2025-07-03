@@ -13,22 +13,21 @@ try {
         throw new Exception("Kết nối database thất bại: " . (new mysqli())->connect_error);
     }
 
-    $orderID = $_POST['orderID'] ?? null;
-    $orderDate = $_POST['orderDate'] ?? null;
-    $totalPrice = $_POST['totalPrice'] ?? null;
-    $status = $_POST['status'] ?? null;
-    $tableID = $_POST['tableID'] ?? null;
-    $drinksID = $_POST['drinksID'] ?? null;
-    $quantity = $_POST['quantity'] ?? 1; // Giá trị mặc định là 1 nếu không có
+    $input = json_decode(file_get_contents('php://input'), true);
+    $orderID = $input['orderID'] ?? null;
+    $orderDate = $input['orderDate'] ?? null;
+    $totalPrice = $input['totalPrice'] ?? null;
+    $status = $input['status'] ?? null;
+    $tableID = $input['tableID'] ?? null;
+    $items = $input['items'] ?? [];
 
-    if (!$orderID || !$orderDate || !$totalPrice || !$status || !$tableID || !$drinksID || !$quantity) {
+    if (!$orderID || !$orderDate || !$totalPrice || !$status || !$tableID || empty($items)) {
         throw new Exception("Dữ liệu không đầy đủ");
     }
 
-    $success = OrderModel::updateOrder($conn, $orderID, $orderDate, $totalPrice, $status, $tableID, $drinksID, $quantity);
+    $success = OrderModel::updateOrder($conn, $orderID, $orderDate, $totalPrice, $status, $tableID, $items);
 
     if ($success) {
-        // Cập nhật trạng thái bàn nếu thay đổi tableID
         $previousTableID = $conn->query("SELECT tableID FROM orders WHERE orderID = $orderID")->fetch_assoc()['tableID'];
         if ($previousTableID != $tableID) {
             TableModel::updateTableStatus($conn, $previousTableID, 'off');

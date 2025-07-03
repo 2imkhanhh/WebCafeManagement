@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý danh mục</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/category.css" />
+</head>
+<body>
+  <section class="category-container">
+    <h1>Quản lý danh mục</h1>
+    <div class="controls">
+      <button id="btnAddCategory">Thêm danh mục</button>
+    </div>
+    <div class="table-wrapper">
+      <table id="categoryTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên danh mục</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="categoryBody"></tbody>
+      </table>
+    </div>
+    <div id="categoryForm" class="form-overlay" style="display: none;">
+      <div class="form-content">
+        <h2 id="formTitle">Thêm danh mục</h2>
+        <form id="categoryFormInput">
+          <input type="hidden" id="categoryId" name="categoryId">
+          <div class="form-group">
+            <label for="categoryName">Tên danh mục:</label>
+            <input type="text" id="categoryName" name="categoryName" required />
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="btnSave">Lưu</button>
+            <button type="button" id="btnCancel">Hủy</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const apiUrl = '../api/category.php';
+
+    document.getElementById('btnAddCategory').addEventListener('click', () => {
+      document.getElementById('categoryForm').style.display = 'flex';
+      document.getElementById('formTitle').textContent = 'Thêm danh mục';
+      document.getElementById('categoryId').value = '';
+      document.getElementById('categoryName').value = '';
+    });
+
+    document.getElementById('btnCancel').addEventListener('click', () => {
+      document.getElementById('categoryForm').style.display = 'none';
+    });
+
+    document.getElementById('categoryFormInput').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const categoryId = document.getElementById('categoryId').value.trim();
+      const categoryName = document.getElementById('categoryName').value.trim();
+      
+      if (!categoryName) {
+        alert('Vui lòng nhập tên danh mục');
+        return;
+      }
+
+      const method = categoryId ? 'POST' : 'POST';
+      const body = JSON.stringify({
+        id: categoryId || null,
+        name: categoryName
+      });
+
+      try {
+        const response = await fetch(apiUrl, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body
+        });
+        const result = await response.json();
+        if (result.success) {
+          loadCategories();
+          document.getElementById('categoryForm').style.display = 'none';
+        } else {
+          alert(result.error || 'Có lỗi xảy ra');
+        }
+      } catch (error) {
+        console.error('Lỗi:', error);
+      }
+    });
+
+    async function loadCategories() {
+      try {
+        const response = await fetch(apiUrl);
+        const categories = await response.json();
+        const tbody = document.getElementById('categoryBody');
+        tbody.innerHTML = categories.data.map(cat => `
+          <tr>
+            <td>${cat.categoryID}</td>
+            <td>${cat.Name}</td>
+            <td>
+              <button class="btn-edit" data-id="${cat.categoryID}">Sửa</button>
+              <button class="btn-delete" data-id="${cat.categoryID}">Xóa</button>
+            </td>
+          </tr>
+        `).join('');
+
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const res = await fetch(`${apiUrl}?id=${id}`);
+            const data = await res.json();
+            if (data.success) {
+              document.getElementById('categoryForm').style.display = 'flex';
+              document.getElementById('formTitle').textContent = 'Sửa danh mục';
+              document.getElementById('categoryId').value = data.data.categoryID;
+              document.getElementById('categoryName').value = data.data.Name;
+            } else {
+              alert(data.error || 'Không tìm thấy danh mục');
+            }
+          });
+        });
+
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (confirm('Bạn có chắc muốn xóa danh mục này?')) {
+              const id = btn.getAttribute('data-id');
+              const response = await fetch(apiUrl, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+              });
+              const result = await response.json();
+              if (result.success) {
+                loadCategories();
+              } else {
+                alert(result.error || 'Xóa thất bại');
+              }
+            }
+          });
+        });
+
+      } catch (error) {
+        console.error('Lỗi tải danh mục:', error);
+      }
+    }
+
+    window.addEventListener('load', loadCategories);
+  </script>
+</body>
+</html>

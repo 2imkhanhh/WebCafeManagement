@@ -1,25 +1,16 @@
-let tablesMap = new Map();
+class OrderController {
+  static async init(mainContent) {
+    try {
+      this.loadOrders(mainContent);
+      this.handleAddOrder(mainContent);
+    } catch (err) {
+      console.error('Lỗi khi khởi tạo OrderController:', err);
+      mainContent.querySelector('#orderGrid').innerHTML = '<p>Lỗi: Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.</p>';
+    }
+  }
 
-function loadTablesMap() {
-  return fetch('../api/get_tables.php')
-    .then(res => {
-      if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-      return res.json();
-    })
-    .then(data => {
-      if (data.success && Array.isArray(data.data)) {
-        tablesMap = new Map(data.data.map(table => [parseInt(table.tableID), table.Name]));
-      } else {
-        console.warn('Dữ liệu bàn không hợp lệ:', data);
-      }
-    })
-    .catch(err => console.error('Lỗi khi tải danh sách bàn:', err));
-}
-
-export function loadOrders(mainContent) {
-  const orderGrid = mainContent.querySelector('#orderGrid');
-
-  loadTablesMap().then(() => {
+  static loadOrders(mainContent) {
+    const orderGrid = mainContent.querySelector('#orderGrid');
     fetch('../api/get_orders.php')
       .then(res => {
         if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
@@ -34,7 +25,8 @@ export function loadOrders(mainContent) {
             order.className = 'order-item';
             const orderDate = item.orderDate;
             const statusText = item.status === 'completed' ? 'Mang về' : 'Dùng tại quán';
-            const tableName = item.tableID ? tablesMap.get(parseInt(item.tableID)) || 'Không xác định' : 'Chưa có';
+            const tableName = item.Name || 'Chưa có';
+            console.log(`Order #${item.orderID}: tableID=${item.tableID}, tableName=${tableName}`);
             order.innerHTML = `
               <h3>Đơn hàng #${item.orderID}</h3>
               <p>Ngày: ${orderDate}</p>
@@ -48,349 +40,189 @@ export function loadOrders(mainContent) {
             `;
             orderGrid.appendChild(order);
 
-            const editBtn = order.querySelector('.btn-edit');
-            editBtn.addEventListener('click', () => openEditPopup(mainContent, item));
-
-            const deleteBtn = order.querySelector('.btn-delete');
-            deleteBtn.addEventListener('click', () => handleDeleteOrder(item.orderID, mainContent));
+            order.querySelector('.btn-edit').addEventListener('click', () => this.openEditPopup(mainContent, item));
+            order.querySelector('.btn-delete').addEventListener('click', () => this.handleDeleteOrder(item.orderID, mainContent));
           });
         } else {
           orderGrid.innerHTML = '<p>Không có đơn hàng nào.</p>';
         }
       })
-      .catch(err => console.error('Lỗi khi tải danh sách đơn hàng:', err));
-  });
-}
+      .catch(err => {
+        console.error('Lỗi khi tải danh sách đơn hàng:', err);
+        orderGrid.innerHTML = '<p>Lỗi: Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.</p>';
+      });
+  }
 
-export function handleAddOrder(mainContent) {
-  const form = mainContent.querySelector('#addOrderForm');
-  const orderForm = mainContent.querySelector('#add-form');
-  const btnShowOrderForm = mainContent.querySelector('#btnShowOrderForm');
-  const btnCancelOrder = mainContent.querySelector('#btnCancel');
+  static handleAddOrder(mainContent) {
+    const form = mainContent.querySelector('#addOrderForm');
+    const orderForm = mainContent.querySelector('#add-form');
+    const btnShowOrderForm = mainContent.querySelector('#btnShowOrderForm');
+    const btnCancelOrder = mainContent.querySelector('#btnCancel');
 
-  console.log('mainContent in handleAddOrder:', mainContent);
-  console.log('Elements found in handleAddOrder:', {
-    form, orderForm, btnShowOrderForm, btnCancelOrder
-  });
+    if (form && orderForm && btnShowOrderForm && btnCancelOrder) {
+      btnShowOrderForm.addEventListener('click', () => {
+        orderForm.showModal();
+        this.loadSelectOptions(orderForm);
+        form.reset();
+        this.calculateTotal(orderForm);
+      });
 
-  if (form && orderForm && btnShowOrderForm && btnCancelOrder) {
-    btnShowOrderForm.addEventListener('click', () => {
-      orderForm.showModal();
-      loadDrinksForOrder(orderForm);
-      loadTablesForOrder(orderForm);
-      form.reset();
-    });
+      btnCancelOrder.addEventListener('click', () => orderForm.close());
 
-    function loadDrinksForOrder(orderFormElement) {
-      fetch('../api/get_drinks.php')
-        .then(res => {
-          if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-          return res.json();
-        })
-        .then(data => {
-          console.log('Dữ liệu món từ API:', data);
-          const drinkSelect = orderFormElement.querySelector('#drinkSelect');
-          if (drinkSelect) {
-            drinkSelect.innerHTML = '<option value="">-- Chọn món --</option>';
-            if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-              data.data.forEach(drink => {
-                const option = document.createElement('option');
-                option.value = drink.drinksID;
-                option.textContent = drink.Name;
-                option.dataset.price = drink.Price || 0;
-                drinkSelect.appendChild(option);
-              });
-            } else {
-              console.warn('Không có dữ liệu món hoặc API trả về lỗi:', data);
-              drinkSelect.innerHTML += '<option value="" disabled>Không có món nào</option>';
-            }
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const orderData = {
+          orderDate: formData.get('orderDate'),
+          totalPrice: parseInt(formData.get('totalPrice').replace(/[^0-9]/g, '')),
+          status: formData.get('status'),
+          tableID: formData.get('tableID'),
+          items: []
+        };
+        console.log('Dữ liệu gửi đi:', orderData);
+        const drinksIDs = form.querySelectorAll('select[name="drinksID[]"]');
+        const quantities = form.querySelectorAll('input[name="quantity[]"]');
+        drinksIDs.forEach((select, index) => {
+          if (select.value && quantities[index].value) {
+            orderData.items.push({
+              drinksID: select.value,
+              quantity: quantities[index].value
+            });
           }
-        })
-        .catch(err => console.error('Lỗi khi tải danh sách món:', err));
-    }
+        });
 
-    function loadTablesForOrder(orderFormElement) {
-      fetch('../api/get_tables.php')
-        .then(res => {
-          if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-          return res.json();
-        })
-        .then(data => {
-          console.log('Dữ liệu bàn từ API:', data);
-          const tableSelect = orderFormElement.querySelector('#tableSelect');
-          if (tableSelect) {
-            tableSelect.innerHTML = '<option value="">-- Chọn bàn trống --</option>';
-            if (data.success && Array.isArray(data.data)) {
-              data.data
-                .filter(table => table.Status === 'off')
-                .forEach(table => {
-                  const option = document.createElement('option');
-                  option.value = table.tableID;
-                  option.textContent = `Bàn ${table.Name} (ID: ${table.tableID})`;
-                  tableSelect.appendChild(option);
-                });
-            } else {
-              console.warn('Không có dữ liệu bàn hoặc API trả về lỗi:', data);
-              tableSelect.innerHTML += '<option value="" disabled>Không có bàn trống</option>';
-            }
-          }
-        })
-        .catch(err => console.error('Lỗi khi tải danh sách bàn:', err));
-    }
+        if (orderData.items.length === 0) {
+          alert('Vui lòng chọn ít nhất một món!');
+          return;
+        }
 
-    const drinkSelect = form.querySelector('#drinkSelect');
-    const priceInput = form.querySelector('#price');
-    const quantityInput = form.querySelector('#quantity');
-    const totalPriceInput = form.querySelector('#totalPrice');
-    const tableSelect = form.querySelector('#tableSelect');
-
-    drinkSelect.addEventListener('change', () => {
-      const selectedOption = drinkSelect.options[drinkSelect.selectedIndex];
-      const price = selectedOption.dataset.price;
-      priceInput.value = price ? parseInt(price).toLocaleString() : '';
-      calculateTotal();
-    });
-
-    quantityInput.addEventListener('input', calculateTotal);
-
-    function calculateTotal() {
-      const price = parseInt(drinkSelect.options[drinkSelect.selectedIndex]?.dataset.price) || 0;
-      const quantity = parseInt(quantityInput.value) || 1;
-      const total = price * quantity;
-      totalPriceInput.value = total.toLocaleString();
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      console.log('Form submitted, formData:', new FormData(form));
-
-      const formData = new FormData(form);
-      const orderDate = formData.get('orderDate');
-      formData.set('orderDate', orderDate);
-      formData.set('totalPrice', parseInt(totalPriceInput.value.replace(/[^0-9]/g, '')));
-      const drinksID = drinkSelect.value;
-      if (!drinksID) {
-        alert('Vui lòng chọn món!');
-        return;
-      }
-      formData.set('drinksID', drinksID);
-
-      const tableId = tableSelect.value;
-      if (!tableId) {
-        alert('Vui lòng chọn bàn!');
-        return;
-      }
-      formData.set('tableID', tableId);
-
-      const quantity = parseInt(quantityInput.value) || 1;
-      formData.set('quantity', quantity);
-
-      fetch('../api/add_order.php', {
-        method: 'POST',
-        body: formData
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-          return res.json();
-        })
-        .then(data => {
-          console.log('Response từ API:', data);
+        try {
+          const response = await fetch('../api/add_order.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+          });
+          if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+          const data = await response.json();
+          console.log('Phản hồi từ API:', data);
           if (data.success) {
             alert('Đã thêm đơn hàng!');
             orderForm.close();
-            form.reset();
-            loadOrders(mainContent);
-            updateTableStatus(tableId, 'on', mainContent);
+            this.loadOrders(mainContent);
+            if (orderData.tableID) this.updateTableStatus(orderData.tableID, 'on', mainContent);
           } else {
             alert(`Lỗi khi thêm đơn hàng: ${data.message || 'Không xác định'}`);
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.error('Lỗi khi gửi yêu cầu:', err);
           alert('Lỗi kết nối hoặc server: ' + err.message);
-        });
-    });
-
-    btnCancelOrder.addEventListener('click', () => {
-      orderForm.close();
-    });
-  } else {
-    console.error('Không tìm thấy form hoặc các phần tử liên quan trong mainContent:', {
-      form, orderForm, btnShowOrderForm, btnCancelOrder
-    });
-  }
-}
-
-function openEditPopup(mainContent, order) {
-  const orderForm = mainContent.querySelector('#edit-form');
-  const form = mainContent.querySelector('#editOrderForm');
-  const btnCancelOrder = mainContent.querySelector('#btnCancelEdit');
-
-  console.log('mainContent in openEditPopup:', mainContent);
-  console.log('Elements found in openEditPopup:', {
-    orderForm, form, btnCancelOrder
-  });
-
-  if (orderForm && form && btnCancelOrder) {
-    orderForm.showModal();
-
-    // Hiển thị thông tin hiện tại
-    form.querySelector('#orderID').value = order.orderID;
-    form.querySelector('#orderDate').value = order.orderDate.split(' ')[0];
-    form.querySelector('#totalPrice').value = parseInt(order.totalPrice).toLocaleString();
-    form.querySelector('#status').value = order.status;
-    form.querySelector('#quantity').value = order.quantity || 1;
-
-    // Tải danh sách món
-    fetch('../api/get_drinks.php')
-      .then(res => {
-        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          const drinkSelect = form.querySelector('#drinkSelect');
-          drinkSelect.innerHTML = '<option value="">-- Chọn món --</option>';
-          const currentDrink = data.data.find(drink => drink.drinksID == order.drinksID);
-          data.data.forEach(drink => {
-            const option = document.createElement('option');
-            option.value = drink.drinksID;
-            option.textContent = drink.Name;
-            option.dataset.price = drink.Price || 0;
-            if (drink.drinksID == order.drinksID) option.selected = true;
-            drinkSelect.appendChild(option);
-          });
-          const priceInput = form.querySelector('#price');
-          if (currentDrink) {
-            priceInput.value = parseInt(currentDrink.Price).toLocaleString();
-            calculateTotalEdit();
-          } else {
-            priceInput.value = '';
-            form.querySelector('#totalPrice').value = '';
-            console.warn('Không tìm thấy món hiện tại:', order.drinksID);
-          }
-        } else {
-          console.warn('Không có dữ liệu món hoặc API trả về lỗi:', data);
-          form.querySelector('#drinkSelect').innerHTML = '<option value="" disabled>Không có món nào</option>';
-          form.querySelector('#price').value = '';
-          form.querySelector('#totalPrice').value = '';
         }
-      })
-      .catch(err => {
-        console.error('Lỗi khi tải danh sách món:', err);
-        form.querySelector('#drinkSelect').innerHTML = '<option value="" disabled>Không có món nào</option>';
-        form.querySelector('#price').value = '';
-        form.querySelector('#totalPrice').value = '';
       });
 
-    // Tải danh sách bàn trống, bao gồm cả bàn hiện tại của đơn hàng
-    fetch('../api/get_tables.php')
-      .then(res => {
-        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          const tableSelect = form.querySelector('#tableSelect');
-          tableSelect.innerHTML = '<option value="">-- Chọn bàn trống --</option>';
-          const availableTables = data.data.filter(table => table.Status === 'off' || table.tableID == order.tableID);
-          availableTables.forEach(table => {
-            const option = document.createElement('option');
-            option.value = table.tableID;
-            option.textContent = `Bàn ${table.Name} (ID: ${table.tableID})`;
-            if (table.tableID == order.tableID) option.selected = true;
-            tableSelect.appendChild(option);
-          });
-          tableSelect.disabled = false;
-          tableSelect.style.pointerEvents = 'auto';
-          tableSelect.style.opacity = '1';
-          tableSelect.style.cursor = 'pointer';
-          tableSelect.style.backgroundColor = '#fff';
-          tableSelect.style.userSelect = 'auto';
-          console.log('tableSelect after setup:', tableSelect.outerHTML);
-        } else {
-          console.warn('Không có dữ liệu bàn hoặc API trả về lỗi:', data);
-          const tableSelect = form.querySelector('#tableSelect');
-          tableSelect.innerHTML = '<option value="" disabled>Không có bàn trống</option>';
+      document.getElementById('btnAddItem').addEventListener('click', () => {
+        const orderItems = orderForm.querySelector('#orderItems');
+        const newItem = document.createElement('div');
+        newItem.className = 'order-item';
+        newItem.innerHTML = `<select name="drinksID[]" required></select>
+                             <input type="number" name="quantity[]" value="1" min="1" required>
+                             <button type="button" class="btn-remove-item">Xóa</button>`;
+        orderItems.appendChild(newItem);
+        this.loadDrinksForSelect(newItem.querySelector('select'));
+        this.setupEventListeners(newItem);
+        this.calculateTotal(orderForm);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove-item')) {
+          e.target.parentElement.remove();
+          this.calculateTotal(orderForm);
         }
-      })
-      .catch(err => console.error('Lỗi khi tải danh sách bàn:', err));
+      });
 
-    // Hàm tính tổng cho form sửa
-    function calculateTotalEdit() {
-      const drinkSelect = form.querySelector('#drinkSelect');
-      const priceInput = form.querySelector('#price');
-      const quantityInput = form.querySelector('#quantity');
-      const totalPriceInput = form.querySelector('#totalPrice');
-      const selectedOption = drinkSelect.options[drinkSelect.selectedIndex];
-      if (selectedOption && selectedOption.dataset.price) {
-        const price = parseInt(selectedOption.dataset.price) || 0;
-        const quantity = parseInt(quantityInput.value) || 1;
-        const total = price * quantity;
-        totalPriceInput.value = total.toLocaleString();
-      } else {
-        totalPriceInput.value = '';
-      }
+      this.setupEventListeners(orderForm);
+    } else {
+      console.error('Không tìm thấy form hoặc các phần tử liên quan:', { form, orderForm, btnShowOrderForm, btnCancelOrder });
     }
+  }
 
-    // Cập nhật giá và tổng khi thay đổi món hoặc số lượng
-    const drinkSelect = form.querySelector('#drinkSelect');
-    drinkSelect.addEventListener('change', () => {
-      const priceInput = form.querySelector('#price');
-      const selectedOption = drinkSelect.options[drinkSelect.selectedIndex];
-      priceInput.value = selectedOption.dataset.price ? parseInt(selectedOption.dataset.price).toLocaleString() : '';
-      calculateTotalEdit();
-    });
+  static openEditPopup(mainContent, order) {
+    const orderForm = mainContent.querySelector('#edit-form');
+    const form = mainContent.querySelector('#editOrderForm');
+    const btnCancelOrder = mainContent.querySelector('#btnCancelEdit');
 
-    const quantityInput = form.querySelector('#quantity');
-    quantityInput.addEventListener('input', calculateTotalEdit);
+    if (orderForm && form && btnCancelOrder) {
+      orderForm.showModal();
+      form.querySelector('#orderID').value = order.orderID;
+      form.querySelector('#orderDate').value = order.orderDate.split(' ')[0];
+      form.querySelector('#totalPrice').value = parseInt(order.totalPrice).toLocaleString() + 'đ';
+      form.querySelector('#status').value = order.status;
+      form.querySelector('#tableSelect').value = order.tableID;
 
-    // Xử lý sự kiện submit form
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      console.log('Edit form submitted, formData:', Object.fromEntries(new FormData(form)));
-
-      const formData = new FormData(form);
-      const orderID = form.querySelector('#orderID').value;
-      const orderDate = formData.get('orderDate');
-      const totalPrice = formData.get('totalPrice').replace(/[^0-9]/g, '');
-      const status = formData.get('status');
-      const drinksID = form.querySelector('#drinkSelect').value;
-      const tableID = form.querySelector('#tableSelect').value;
-      const quantity = parseInt(form.querySelector('#quantity').value) || 1;
-
-      if (!orderID || !orderDate || !totalPrice || !status || !drinksID || !tableID || !quantity) {
-        alert('Vui lòng điền đầy đủ thông tin!');
-        return;
-      }
-
-      formData.set('orderID', orderID);
-      formData.set('orderDate', orderDate);
-      formData.set('totalPrice', parseInt(totalPrice) || 0);
-      formData.set('status', status);
-      formData.set('drinksID', drinksID);
-      formData.set('tableID', tableID);
-      formData.set('quantity', quantity);
-
-      console.log('Sending formData to update_order.php:', Object.fromEntries(formData));
-
-      fetch('../api/update_order.php', {
-        method: 'POST',
-        body: formData
-      })
+      const orderItems = form.querySelector('#orderItems');
+      orderItems.innerHTML = '<h4>Chọn món:</h4>';
+      fetch('../api/get_order_details.php?orderID=' + order.orderID)
         .then(res => {
           if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
           return res.json();
         })
         .then(data => {
-          console.log('Response từ API update_order:', data);
+          if (data.success && Array.isArray(data.data)) {
+            data.data.forEach(item => {
+              const newItem = document.createElement('div');
+              newItem.className = 'order-item';
+              newItem.innerHTML = `<select name="drinksID[]" required></select>
+                                   <input type="number" name="quantity[]" value="${item.quantity}" min="1" required>
+                                   <button type="button" class="btn-remove-item">Xóa</button>`;
+              orderItems.appendChild(newItem);
+              this.loadDrinksForSelect(newItem.querySelector('select'), item.drinksID);
+            });
+            this.calculateTotal(orderForm);
+            this.setupEventListeners(orderForm);
+          }
+        })
+        .catch(err => console.error('Lỗi khi tải chi tiết đơn hàng:', err));
+
+      btnCancelOrder.addEventListener('click', () => orderForm.close());
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const orderData = {
+          orderID: formData.get('orderID'),
+          orderDate: formData.get('orderDate'),
+          totalPrice: parseInt(formData.get('totalPrice').replace(/[^0-9]/g, '')),
+          status: formData.get('status'),
+          tableID: formData.get('tableID'),
+          items: []
+        };
+        const drinksIDs = form.querySelectorAll('select[name="drinksID[]"]');
+        const quantities = form.querySelectorAll('input[name="quantity[]"]');
+        drinksIDs.forEach((select, index) => {
+          if (select.value && quantities[index].value) {
+            orderData.items.push({
+              drinksID: select.value,
+              quantity: quantities[index].value
+            });
+          }
+        });
+
+        fetch('../api/update_order.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        })
+        .then(res => {
+          if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
+          return res.json();
+        })
+        .then(data => {
           if (data.success) {
             alert('Đã cập nhật đơn hàng!');
             orderForm.close();
-            loadOrders(mainContent);
-            if (tableID && order.tableID != tableID) {
-              updateTableStatus(order.tableID, 'off', mainContent);
-              updateTableStatus(tableID, 'on', mainContent);
+            this.loadOrders(mainContent);
+            if (orderData.tableID && order.tableID !== orderData.tableID) {
+              this.updateTableStatus(order.tableID, 'off', mainContent);
+              this.updateTableStatus(orderData.tableID, 'on', mainContent);
             }
           } else {
             alert(`Cập nhật thất bại: ${data.message || 'Không xác định'}`);
@@ -400,27 +232,39 @@ function openEditPopup(mainContent, order) {
           console.error('Lỗi khi cập nhật đơn hàng:', err);
           alert('Lỗi kết nối hoặc server: ' + err.message);
         });
-    });
+      });
 
-    // Xử lý sự kiện nút Huỷ
-    btnCancelOrder.addEventListener('click', () => {
-      orderForm.close();
-      form.reset();
-    });
-  } else {
-    console.error('Không tìm thấy form hoặc các phần tử liên quan trong mainContent:', {
-      orderForm, form, btnCancelOrder
-    });
+      document.getElementById('btnAddItem').addEventListener('click', () => {
+        const orderItems = orderForm.querySelector('#orderItems');
+        const newItem = document.createElement('div');
+        newItem.className = 'order-item';
+        newItem.innerHTML = `<select name="drinksID[]" required></select>
+                             <input type="number" name="quantity[]" value="1" min="1" required>
+                             <button type="button" class="btn-remove-item">Xóa</button>`;
+        orderItems.appendChild(newItem);
+        this.loadDrinksForSelect(newItem.querySelector('select'));
+        this.setupEventListeners(newItem);
+        this.calculateTotal(orderForm);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-remove-item')) {
+          e.target.parentElement.remove();
+          this.calculateTotal(orderForm);
+        }
+      });
+    } else {
+      console.error('Không tìm thấy form hoặc các phần tử liên quan:', { orderForm, form, btnCancelOrder });
+    }
   }
-}
 
-function handleDeleteOrder(orderId, mainContent) {
-  if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
-    fetch('../api/delete_order.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ orderID: orderId })
-    })
+  static handleDeleteOrder(orderId, mainContent) {
+    if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
+      fetch('../api/delete_order.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ orderID: orderId })
+      })
       .then(res => {
         if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
         return res.json();
@@ -428,13 +272,13 @@ function handleDeleteOrder(orderId, mainContent) {
       .then(data => {
         if (data.success) {
           alert('Đã xóa đơn hàng!');
-          loadOrders(mainContent);
+          this.loadOrders(mainContent);
           fetch('../api/get_orders.php')
             .then(res => res.json())
             .then(orders => {
               const order = orders.data.find(o => o.orderID == orderId);
               if (order && order.tableID) {
-                updateTableStatus(order.tableID, 'off', mainContent);
+                this.updateTableStatus(order.tableID, 'off', mainContent);
               }
             });
         } else {
@@ -445,15 +289,15 @@ function handleDeleteOrder(orderId, mainContent) {
         console.error('Lỗi khi xóa đơn hàng:', err);
         alert('Lỗi kết nối hoặc server: ' + err.message);
       });
+    }
   }
-}
 
-function updateTableStatus(tableId, status, mainContent) {
-  fetch('../api/update_table_status.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ tableID: tableId, status: status })
-  })
+  static updateTableStatus(tableId, status, mainContent) {
+    fetch('../api/update_table_status.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ tableID: tableId, status: status })
+    })
     .then(res => {
       if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
       return res.json();
@@ -461,9 +305,97 @@ function updateTableStatus(tableId, status, mainContent) {
     .then(data => {
       if (data.success) {
         console.log(`Cập nhật trạng thái bàn ${tableId} thành ${status} thành công`);
+        this.loadOrders(mainContent); // Làm mới danh sách sau khi cập nhật trạng thái
       } else {
         console.error('Cập nhật trạng thái bàn thất bại:', data.message);
       }
     })
     .catch(err => console.error('Lỗi khi cập nhật trạng thái bàn:', err));
+  }
+
+  static loadSelectOptions(orderForm) {
+    this.loadTablesForSelect(orderForm.querySelector('#tableSelect'));
+    const drinkSelects = orderForm.querySelectorAll('select[name="drinksID[]"]');
+    drinkSelects.forEach(select => this.loadDrinksForSelect(select));
+  }
+
+  static loadTablesForSelect(select) {
+    fetch('../api/get_tables.php')
+      .then(res => {
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          select.innerHTML = '<option value="">-- Chọn bàn trống --</option>';
+          data.data.filter(table => table.Status === 'off').forEach(table => {
+            const option = document.createElement('option');
+            option.value = table.tableID;
+            option.textContent = `Bàn ${table.Name} (ID: ${table.tableID})`;
+            select.appendChild(option);
+          });
+        } else {
+          console.warn('Không có dữ liệu bàn hoặc API trả về lỗi:', data);
+          select.innerHTML = '<option value="" disabled>Không có bàn trống</option>';
+        }
+      })
+      .catch(err => console.error('Lỗi khi tải danh sách bàn:', err));
+  }
+
+  static loadDrinksForSelect(select, selectedId = null) {
+    fetch('../api/get_drinks.php')
+      .then(res => {
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          select.innerHTML = '<option value="">-- Chọn món --</option>';
+          data.data.forEach(drink => {
+            const option = document.createElement('option');
+            option.value = drink.drinksID;
+            option.textContent = `${drink.Name} (${drink.Price}đ)`;
+            option.dataset.price = drink.Price || 0;
+            if (drink.drinksID == selectedId) option.selected = true;
+            select.appendChild(option);
+          });
+        } else {
+          console.warn('Không có dữ liệu món hoặc API trả về lỗi:', data);
+          select.innerHTML = '<option value="" disabled>Không có món nào</option>';
+        }
+      })
+      .catch(err => console.error('Lỗi khi tải danh sách món:', err));
+  }
+
+  static calculateTotal(orderForm) {
+    let total = 0;
+    const quantities = orderForm.querySelectorAll('input[name="quantity[]"]');
+    const drinkSelects = orderForm.querySelectorAll('select[name="drinksID[]"]');
+    drinkSelects.forEach((select, index) => {
+      const price = parseInt(select.options[select.selectedIndex]?.dataset.price) || 0;
+      const quantity = parseInt(quantities[index].value) || 1;
+      total += price * quantity;
+    });
+    orderForm.querySelector('#totalPrice').value = total.toLocaleString() + 'đ';
+  }
+
+  static setupEventListeners(container) {
+    const drinkSelects = container.querySelectorAll('select[name="drinksID[]"]');
+    drinkSelects.forEach(select => {
+      select.addEventListener('change', (e) => {
+        const orderForm = e.target.closest('dialog#add-form') || e.target.closest('dialog#edit-form');
+        if (orderForm) this.calculateTotal(orderForm);
+      });
+    });
+
+    const quantities = container.querySelectorAll('input[name="quantity[]"]');
+    quantities.forEach(input => {
+      input.addEventListener('input', (e) => {
+        const orderForm = e.target.closest('dialog#add-form') || e.target.closest('dialog#edit-form');
+        if (orderForm) this.calculateTotal(orderForm);
+      });
+    });
+  }
 }
+
+export default OrderController;

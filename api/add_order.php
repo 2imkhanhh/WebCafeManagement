@@ -13,29 +13,26 @@ try {
         throw new Exception("Kết nối database thất bại: " . (new mysqli())->connect_error);
     }
 
-    $orderDate = $_POST['orderDate'] ?? null;
-    $totalPrice = $_POST['totalPrice'] ?? null;
-    $status = $_POST['status'] ?? null;
-    $tableID = $_POST['tableID'] ?? null;
-    $drinksID = $_POST['drinksID'] ?? null;
-    $quantity = $_POST['quantity'] ?? 1;
+    $input = json_decode(file_get_contents('php://input'), true);
+    $orderDate = $input['orderDate'] ?? null;
+    $totalPrice = $input['totalPrice'] ?? null;
+    $status = $input['status'] ?? null;
+    $tableID = $input['tableID'] ?? null;
+    $items = $input['items'] ?? [];
 
-    if (!$orderDate || !$totalPrice || !$status || !$tableID || !$drinksID || !$quantity) {
+    if (!$orderDate || !$totalPrice || !$status || !$tableID || empty($items)) {
         throw new Exception("Dữ liệu không đầy đủ");
     }
 
-    $success = OrderModel::addOrder($conn, $orderDate, $totalPrice, $status, $tableID, $drinksID, $quantity);
+    $success = OrderModel::addOrder($conn, $orderDate, $totalPrice, $status, $tableID, $items);
 
     if ($success) {
-        // Lấy orderID vừa thêm
         $newOrderID = $conn->insert_id;
-        // Cập nhật orderID vào bảng tablecafe
         $stmt = $conn->prepare("UPDATE tablecafe SET orderID = ? WHERE tableID = ?");
         $stmt->bind_param("ii", $newOrderID, $tableID);
         $stmt->execute();
         $stmt->close();
 
-        // Cập nhật trạng thái bàn thành "on"
         TableModel::updateTableStatus($conn, $tableID, 'on');
         echo json_encode(['success' => true, 'message' => 'Thêm đơn hàng thành công', 'orderID' => $newOrderID]);
     } else {

@@ -12,24 +12,20 @@ try {
         throw new Exception("Kết nối database thất bại: " . (new mysqli())->connect_error);
     }
 
-    $orderID = $_POST['orderID'] ?? null;
+    $orderID = $_GET['orderID'] ?? null;
 
     if (!$orderID) {
         throw new Exception("Mã đơn hàng không hợp lệ");
     }
 
-    $success = OrderModel::deleteOrder($conn, $orderID);
+    $stmt = $conn->prepare("SELECT * FROM orderdetails WHERE orderID = ?");
+    $stmt->bind_param("i", $orderID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $details = $result->fetch_all(MYSQLI_ASSOC);
 
-    if ($success) {
-        $order = $conn->query("SELECT tableID FROM orders WHERE orderID = $orderID")->fetch_assoc();
-        if ($order && $order['tableID']) {
-            require_once("../model/TableModel.php");
-            TableModel::updateTableStatus($conn, $order['tableID'], 'off');
-        }
-        echo json_encode(['success' => true]);
-    } else {
-        throw new Exception("Xóa thất bại: " . $conn->error);
-    }
+    echo json_encode(['success' => true, 'data' => $details]);
+    $stmt->close();
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

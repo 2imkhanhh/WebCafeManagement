@@ -1,10 +1,38 @@
-.title {
-  margin-bottom: 20px;
-  font-size: 24px;
+/* =================== CẤU TRÚC CHUNG =================== */
+.order-container {
+  padding: 20px;
+  background-color: #fff;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 10px;
 }
 
-.btn-add {
-  margin-bottom: 20px;
+/* Tiêu đề và nút thêm cố định trên cùng */
+#order-section {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 130px);
+  overflow: hidden;
+  position: relative;
+}
+
+#order-section h2.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  z-index: 2;
+  padding: 10px 0;
+  /* border-bottom: 1px solid #eee; */ /* ĐÃ XOÁ gạch dưới */
+}
+
+#btnShowOrderForm {
+  align-self: flex-start;
+  margin-bottom: 10px;
   padding: 10px 20px;
   background-color: #4CAF50;
   color: white;
@@ -12,103 +40,80 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
+  position: sticky;
+  top: 50px;
+  z-index: 2;
+  width: fit-content;
+  max-width: 300px;
 }
 
-/* Định nghĩa wrapper để cố định viền */
-.order-container {
-  padding: 20px;
-  border: 1px solid #ccc !important;
-  border-radius: 10px !important;
-  background-color: #fff !important;
-  max-height: calc(100vh - 130px) !important;
-  overflow: hidden !important;
-  position: relative !important;
-}
-
-/* Danh sách đơn hàng có thanh cuộn */
+/* =================== DANH SÁCH ĐƠN HÀNG =================== */
 .order-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  max-height: calc(100vh - 300px) !important;
-  overflow-y: auto !important;
-  padding-bottom: 10px !important;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-right: 5px;
+  padding-bottom: 10px;
 }
 
-/* Style cho từng đơn hàng */
+/* Mỗi đơn hàng */
 .order-item {
   border: 1px solid #ccc;
-  padding: 15px;
-  border-radius: 8px;
+  border-radius: 10px;
+  background-color: #f0f0f0; /* Màu nền xám */
+  padding: 10px;
   text-align: center;
-  background-color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 200px; /* Đảm bảo chiều cao tối thiểu để chứa nội dung */
-  position: relative;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .order-item:hover {
-  transform: translateY(-2px);
+  transform: scale(1.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .order-item h3 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #333;
+  font-size: 18px;
+  margin: 10px 0 5px;
 }
 
 .order-item p {
+  font-size: 14px;
+  color: #333;
   margin: 5px 0;
-  color: #666;
-  word-wrap: break-word; /* Đảm bảo văn bản dài ngắt dòng */
-  max-width: 100%; /* Giới hạn chiều rộng */
+  font-weight: 500;
 }
 
-/* Nút hành động luôn ở dưới cùng */
+/* =================== NÚT HÀNH ĐỘNG =================== */
 .action-buttons {
-  margin-top: auto; /* Đẩy nút xuống dưới cùng */
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding-top: 10px; /* Khoảng cách từ nội dung lên nút */
+  margin-top: 10px;
 }
 
-/* Định nghĩa kích thước nút Sửa và Xóa đồng đều */
 .btn-edit,
 .btn-delete {
-  padding: 8px 15px; /* Đồng bộ padding */
+  padding: 6px 12px;
   border: none;
   border-radius: 5px;
-  color: white;
   cursor: pointer;
+  font-size: 14px;
   font-weight: bold;
-  font-size: 14px; /* Đồng bộ font-size */
-  transition: background-color 0.3s;
-  min-width: 70px; /* Đảm bảo chiều rộng tối thiểu để cân bằng */
-  text-align: center;
+  color: white;
 }
 
 .btn-edit {
-  background-color: #ff9800;
-}
-
-.btn-edit:hover {
-  background-color: #f57c00;
+  background-color: #2196F3;
 }
 
 .btn-delete {
   background-color: #f44336;
 }
 
-.btn-delete:hover {
-  background-color: #da190b;
-}
-
-/* Dialog */
+/* =================== FORM DIALOG =================== */
 dialog#add-form,
 dialog#edit-form {
   position: fixed;
@@ -134,62 +139,110 @@ dialog#edit-form::backdrop {
   z-index: 1000;
 }
 
-/* Animation fade-in */
+/* Hiệu ứng dialog */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Style cho form trong dialog */
-#addOrderForm,
-#editOrderForm {
+/* Form */
+form {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-#addOrderForm label,
-#editOrderForm label {
+form label {
   margin-top: 5px;
   font-weight: 500;
   color: #333;
 }
 
-#addOrderForm input[type="text"],
-#addOrderForm input[type="date"],
-#addOrderForm input[type="number"],
-#addOrderForm select,
-#editOrderForm input[type="text"],
-#editOrderForm input[type="date"],
-#editOrderForm input[type="number"],
-#editOrderForm select {
+form input[type="text"],
+form input[type="number"],
+form input[type="date"],
+form select {
   padding: 10px;
-  margin-top: 0;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 16px;
   width: 100%;
   background-color: #fff;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
 }
 
-#addOrderForm input[type="text"]:focus,
-#addOrderForm input[type="date"]:focus,
-#addOrderForm input[type="number"]:focus,
-#addOrderForm select:focus,
-#editOrderForm input[type="text"]:focus,
-#editOrderForm input[type="date"]:focus,
-#editOrderForm input[type="number"]:focus,
-#editOrderForm select:focus {
+form input[readonly] {
+  background-color: #f0f0f0;
+}
+
+form select:focus {
   outline: none;
   border-color: #2196F3;
   box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
 }
 
-#addOrderForm input[readonly],
-#editOrderForm input[readonly] {
-  background-color: #f9f9f9;
-  color: #666;
-  cursor: not-allowed;
+/* =================== MÓN TRONG ĐƠN HÀNG =================== */
+#orderItems {
+  margin-top: 10px;
+}
+
+#orderItems .order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+#orderItems select {
+  flex: 2;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+#orderItems input[type="number"] {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.btn-remove-item {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  height: 35px;
+}
+
+.btn-remove-item:hover {
+  background-color: #d32f2f;
+}
+
+/* =================== BUTTON =================== */
+#btnAddItem {
+  background-color: #2196F3;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+#btnAddItem:hover {
+  background-color: #1976D2;
 }
 
 .form-buttons {
@@ -197,11 +250,6 @@ dialog#edit-form::backdrop {
   justify-content: space-between;
   gap: 10px;
   margin-top: 20px;
-  padding-bottom: 10px;
-}
-
-.form-buttons button {
-  flex: 1;
 }
 
 .btn-save {
@@ -212,9 +260,10 @@ dialog#edit-form::backdrop {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
+  flex: 1;
 }
 
-.btn-delete {
+.btn-cancel {
   background-color: #ccc;
   color: black;
   padding: 10px;
@@ -222,13 +271,5 @@ dialog#edit-form::backdrop {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-}
-
-.btn-save:hover,
-.btn-edit:hover {
-  opacity: 0.9;
-}
-
-.btn-delete:hover {
-  background-color: #bbb;
+  flex: 1;
 }
