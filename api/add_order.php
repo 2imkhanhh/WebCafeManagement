@@ -18,7 +18,7 @@ try {
     $status = $_POST['status'] ?? null;
     $tableID = $_POST['tableID'] ?? null;
     $drinksID = $_POST['drinksID'] ?? null;
-    $quantity = $_POST['quantity'] ?? 1; // Giá trị mặc định là 1 nếu không có
+    $quantity = $_POST['quantity'] ?? 1;
 
     if (!$orderDate || !$totalPrice || !$status || !$tableID || !$drinksID || !$quantity) {
         throw new Exception("Dữ liệu không đầy đủ");
@@ -27,9 +27,17 @@ try {
     $success = OrderModel::addOrder($conn, $orderDate, $totalPrice, $status, $tableID, $drinksID, $quantity);
 
     if ($success) {
+        // Lấy orderID vừa thêm
+        $newOrderID = $conn->insert_id;
+        // Cập nhật orderID vào bảng tablecafe
+        $stmt = $conn->prepare("UPDATE tablecafe SET orderID = ? WHERE tableID = ?");
+        $stmt->bind_param("ii", $newOrderID, $tableID);
+        $stmt->execute();
+        $stmt->close();
+
         // Cập nhật trạng thái bàn thành "on"
         TableModel::updateTableStatus($conn, $tableID, 'on');
-        echo json_encode(['success' => true, 'message' => 'Thêm đơn hàng thành công', 'orderID' => $conn->insert_id]);
+        echo json_encode(['success' => true, 'message' => 'Thêm đơn hàng thành công', 'orderID' => $newOrderID]);
     } else {
         throw new Exception("Thêm đơn hàng thất bại");
     }

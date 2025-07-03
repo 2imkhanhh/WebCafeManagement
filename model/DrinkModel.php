@@ -47,4 +47,15 @@ class DrinkModel {
         $result = $conn->query($sql);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+
+    public static function getDrinkById($conn, $drinksID) {
+        $sql = "SELECT drinksID, Name, Price FROM drinks WHERE drinksID = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $drinksID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $drink = $result->fetch_assoc();
+        $stmt->close();
+        return $drink ? $drink : null;
+    }
 }

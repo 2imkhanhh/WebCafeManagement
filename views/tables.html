@@ -44,4 +44,14 @@
   </dialog>
 
   <link rel="stylesheet" href="../assets/css/tables.css">
-</html>
+
+  <script src="TableController.js"></script>
+  <script>
+    const mainContent = document.getElementById('table-wrapper');
+    if (mainContent) {
+      initTablePage(mainContent);
+    } else {
+      console.error('Không tìm thấy element #table-wrapper');
+    }
+  </script>
+</div>

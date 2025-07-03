@@ -20,4 +20,15 @@ class OrderModel {
         $stmt->bind_param("sdsiisi", $orderDate, $totalPrice, $status, $tableID, $drinksID, $quantity, $orderID);
         return $stmt->execute();
     }
+
+    public static function getOrderById($conn, $orderID) {
+        $sql = "SELECT orderID, DATE(orderDate) AS orderDate, totalPrice, status, tableID, drinksID, quantity FROM orders WHERE orderID = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $orderID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $order = $result->fetch_assoc();
+        $stmt->close();
+        return $order ? $order : null;
+    }
 }

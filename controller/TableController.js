@@ -16,10 +16,11 @@ function loadTables(mainContent) {
           tableItem.className = `table-item ${table.Status}`;
           tableItem.innerHTML = `
             <h3>${table.Name}</h3>
-            <p>Order ID: ${table.orderID || 'Chưa có'}</p> <!-- Hiển thị orderID -->
+            <p>Order ID: ${table.orderID || 'Chưa có'}</p>
             <div class="action-buttons">
               <button class="btn-edit" data-id="${table.tableID}">Sửa</button>
               <button class="btn-delete">Xoá</button>
+              <button class="btn-view-order" data-id="${table.tableID}" data-order-id="${table.orderID || ''}">Xem Đơn</button>
             </div>
           `;
           tableGrid.appendChild(tableItem);
@@ -29,6 +30,16 @@ function loadTables(mainContent) {
 
           const deleteBtn = tableItem.querySelector('.btn-delete');
           deleteBtn.addEventListener('click', () => handleDeleteTable(table.tableID, mainContent));
+
+          const viewOrderBtn = tableItem.querySelector('.btn-view-order');
+          viewOrderBtn.addEventListener('click', () => {
+            const orderId = table.orderID ? parseInt(table.orderID) : null;
+            if (orderId) {
+              showOrderDetails(mainContent, table.tableID, orderId);
+            } else {
+              alert('Chưa có đơn hàng cho bàn này.');
+            }
+          });
         });
       } else {
         console.error('Dữ liệu trả về không hợp lệ:', data);
@@ -48,7 +59,7 @@ export function handleAddTable(mainContent) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new URLSearchParams(new FormData(form));
-    const orderID = form.querySelector('#tableOrderID')?.value || ''; // Lấy orderID nếu có
+    const orderID = form.querySelector('#tableOrderID')?.value || '';
 
     if (orderID) formData.append('orderID', orderID);
 
@@ -97,7 +108,7 @@ function openEditPopup(mainContent, table) {
   form.querySelector('#editTableID').value = table.tableID;
   form.querySelector('#editTableName').value = table.Name;
   form.querySelector('#editTableStatus').value = table.Status;
-  form.querySelector('#editTableOrderID').value = table.orderID || ''; // Hiển thị orderID
+  form.querySelector('#editTableOrderID').value = table.orderID || '';
 
   editForm.showModal();
 
@@ -153,4 +164,65 @@ function handleDeleteTable(tableId, mainContent) {
       alert('Lỗi kết nối hoặc server: ' + err.message);
     });
   }
+}
+
+function showOrderDetails(mainContent, tableId, orderId) {
+  const dialog = document.createElement('dialog');
+  dialog.id = 'order-details-dialog';
+  dialog.innerHTML = `
+    <h3>Chi tiết đơn hàng cho bàn ${tableId}</h3>
+    <div id="order-details-content">
+      <p>Đang tải...</p>
+    </div>
+    <button id="btnCloseOrderDetails" class="btn-delete">Đóng</button>
+  `;
+  mainContent.appendChild(dialog);
+
+  if (orderId) {
+    fetch('../api/get_order_by_id.php?orderID=' + orderId)
+      .then(res => res.json())
+      .then(data => {
+        const content = document.getElementById('order-details-content');
+        if (data.success && data.data) {
+          const order = data.data;
+          fetch('../api/get_drink_by_id.php?drinksID=' + order.drinksID)
+            .then(res => res.json())
+            .then(drinkData => {
+              if (drinkData.success && drinkData.data) {
+                const drink = drinkData.data;
+                content.innerHTML = `
+                  <p>Order ID: ${order.orderID}</p>
+                  <p>Ngày: ${order.orderDate}</p>
+                  <p>Tên món: ${drink.Name}</p>
+                  <p>Số lượng: ${order.quantity}</p>
+                  <p>Giá tiền: ${parseInt(drink.Price).toLocaleString()}đ</p>
+                  <p>Tổng tiền: ${parseInt(order.totalPrice).toLocaleString()}đ</p>
+                `;
+              } else {
+                content.innerHTML = '<p>Không tìm thấy thông tin món.</p>';
+              }
+            })
+            .catch(err => {
+              console.error('Lỗi khi tải thông tin món:', err);
+              content.innerHTML = '<p>Lỗi khi tải thông tin món.</p>';
+            });
+        } else {
+          content.innerHTML = '<p>Không có đơn hàng cho bàn này.</p>';
+        }
+      })
+      .catch(err => {
+        console.error('Lỗi khi tải chi tiết đơn hàng:', err);
+        document.getElementById('order-details-content').innerHTML = '<p>Lỗi khi tải chi tiết đơn hàng.</p>';
+      });
+  } else {
+    document.getElementById('order-details-content').innerHTML = '<p>Chưa có đơn hàng cho bàn này.</p>';
+  }
+
+  dialog.showModal();
+
+  const closeBtn = document.getElementById('btnCloseOrderDetails');
+  closeBtn.addEventListener('click', () => {
+    dialog.close();
+    mainContent.removeChild(dialog);
+  });
 }
