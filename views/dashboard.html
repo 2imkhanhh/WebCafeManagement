@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trang chủ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css" />
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="../assets/image/logo.jpg" alt="Logo Quán Cà Phê" />
+      </div>
+      <nav class="menu">
+        <button>Trang chủ</button>
+        <button id="btn-drinks">Quản lý món</button>
+        <button id="btn-staff">Quản lý nhân viên</button>
+        <button>Quản lý danh mục</button>
+        <button id="btn-orders">Quản lý đơn hàng</button>
+        <button id="btn-tables">Quản lý bàn</button>
+        <button id="logout">Đăng xuất</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <div class="user-avatar">
+          <img src="../assets/image/avatar.png" alt="Tài khoản" />
+        </div>
+      </header>
+
+      <section class="dashboard" id="main-content">
+        <h1>Chào mừng bạn đến với hệ thống quản lý quán cà phê</h1>
+        <p>Chọn chức năng ở menu bên trái để bắt đầu làm việc.</p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDrinksPage } from '../controller/DrinkController.js';
+    import { loadOrders, handleAddOrder } from '../controller/OrderController.js';
+    import { initTablePage } from '../controller/TableController.js';
+    
+    document.getElementById('logout').addEventListener('click', function () {
+      window.location.href = '../views/login.html';
+    });
+
+    document.getElementById('btn-drinks').addEventListener('click', function () {
+      fetch('../views/drinks.html')
+        .then(response => response.text())
+        .then(html => {
+          const mainContent = document.getElementById('main-content');
+          mainContent.innerHTML = html;
+          initDrinksPage(mainContent); 
+        })
+        .catch(err => console.error('Lỗi khi tải drinks.html:', err));
+    });
+
+    document.getElementById('btn-orders').addEventListener('click', function () {
+    fetch('../views/orders.html')
+      .then(response => response.text())
+      .then(html => {
+        const mainContent = document.getElementById('main-content');
+        mainContent.innerHTML = html;
+        loadOrders(mainContent); 
+        handleAddOrder(mainContent); 
+      })
+      .catch(err => console.error('Lỗi khi tải orders.html:', err));
+    });
+
+    document.getElementById('btn-staff').addEventListener('click', () => {
+    fetch('../views/staff.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('main-content').innerHTML = html;
+        const script = document.createElement('script');
+        script.src = '../controller/StaffController.js';
+        script.onload = () => {
+          if (typeof initStaffPage === 'function') {
+            initStaffPage();
+          } else {
+            console.error('initStaffPage không được định nghĩa');
+          }
+        };
+        document.body.appendChild(script);
+      })
+      .catch(error => console.error('Lỗi tải staff.html:', error));
+    });
+
+
+    document.getElementById('btn-tables').addEventListener('click', function(){
+      fetch('../views/tables.html')
+      .then(response => response.text())
+      .then(html => {
+        const mainContent = document.getElementById('main-content');
+        mainContent.innerHTML = html;
+        initTablePage(mainContent);
+      })
+      .catch(err => console.error('Lỗi khi tải tables.html:', err))
+    });
+  </script>
+</body>
+</html>

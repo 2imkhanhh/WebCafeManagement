@@ -1,0 +1,66 @@
+<div id="drink-wrapper">
+  <div id="category-buttons">
+    
+  </div>
+
+  <div id="drink-section">
+    <h2 class="title">Danh sách đồ uống</h2>
+    <button id="btnShowForm" class="btn-add">+ Thêm món</button>
+
+    <div class="drink-grid" id="drinkGrid"></div>
+  </div>
+
+  <dialog id="add-form">
+    <h3>Thêm món mới</h3>
+    <form id="drinkForm" enctype="multipart/form-data">
+      <label>Tên món:</label><br>
+      <input type="text" id="tenMon" name="tenMon" required><br><br>
+
+      <label>Loại đồ uống:</label><br>
+      <select id="loaiDoUong" name="Category" required>
+        <option value="">-- Chọn loại đồ uống --</option>
+      </select><br><br>
+
+      <label>Hình ảnh (chọn file từ máy):</label><br>
+      <input type="file" id="hinhAnh" name="hinhAnh" accept="image/*" required><br><br>
+
+      <label>Giá (VNĐ):</label><br>
+      <input type="number" id="gia" name="gia" required><br><br>
+
+      <div class="form-buttons">
+        <button type="submit" class="btn-save">Lưu</button>
+        <button type="button" id="btnCancel" class="btn-delete">Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="edit-form">
+    <h3>Chỉnh sửa món</h3>
+    <form id="editDrinkForm" enctype="multipart/form-data">
+      <input type="hidden" id="editID" name="ID"> 
+
+      <label>Tên món:</label><br>
+      <input type="text" id="editTenMon" name="Name" required><br><br> 
+
+      <label>Loại đồ uống:</label><br>
+      <select id="editLoaiDoUong" name="Category" required>
+        <option value="">-- Chọn loại đồ uống --</option>
+      </select><br><br> 
+
+      <label>Hình ảnh (chọn file từ máy):</label><br>
+      <input type="file" id="editHinhAnh" name="Image" accept="image/*"><br><br>
+
+      <label>Giá (VNĐ):</label><br>
+      <input type="number" id="editGia" name="Price" required><br><br> 
+
+      <input type="hidden" id="editOldImage" name="OldImage">
+
+      <div class="form-buttons">
+        <button type="submit" class="btn-save">Lưu</button>
+        <button type="button" id="btnCancelEdit" class="btn-delete">Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <link rel="stylesheet" href="../assets/css/drinks.css">
+</html>

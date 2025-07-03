@@ -1,0 +1,47 @@
+<div id="table-wrapper">
+  <div id="table-buttons">
+    
+  </div>
+
+  <div id="table-section">
+    <h2 class="title">Quản lý bàn</h2>
+    <button id="btnShowTableForm" class="btn-add">+ Thêm bàn</button>
+    <div class="table-grid" id="tableGrid"></div>
+  </div>
+
+  <dialog id="add-table-form">
+    <h3>Thêm bàn mới</h3>
+    <form id="tableForm" enctype="application/x-www-form-urlencoded">
+      <label>Tên bàn:</label><br>
+      <input type="text" id="tableName" name="tableName" required><br><br>
+      <label>Order ID (tùy chọn):</label><br>
+      <input type="number" id="tableOrderID" name="orderID"><br><br>
+      <div class="form-buttons">
+        <button type="submit" class="btn-save">Lưu</button>
+        <button type="button" id="btnCancelTable" class="btn-delete">Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="edit-table-form">
+    <h3>Chỉnh sửa bàn</h3>
+    <form id="editTableForm" enctype="application/x-www-form-urlencoded">
+      <input type="hidden" id="editTableID" name="tableID">
+      <label>Tên bàn:</label><br>
+      <input type="text" id="editTableName" name="tableName" required><br><br>
+      <label>Trạng thái:</label><br>
+      <select id="editTableStatus" name="status" required>
+        <option value="off">Trống</option>
+        <option value="on">Có khách</option>
+      </select><br><br>
+      <label>Order ID (tùy chọn):</label><br>
+      <input type="number" id="editTableOrderID" name="orderID"><br><br>
+      <div class="form-buttons">
+        <button type="submit" class="btn-save">Lưu</button>
+        <button type="button" id="btnCancelEditTable" class="btn-delete">Huỷ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <link rel="stylesheet" href="../assets/css/tables.css">
+</html>

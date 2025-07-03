@@ -1,0 +1,234 @@
+.title {
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.btn-add {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Định nghĩa wrapper để cố định viền */
+.order-container {
+  padding: 20px;
+  border: 1px solid #ccc !important;
+  border-radius: 10px !important;
+  background-color: #fff !important;
+  max-height: calc(100vh - 130px) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Danh sách đơn hàng có thanh cuộn */
+.order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  max-height: calc(100vh - 300px) !important;
+  overflow-y: auto !important;
+  padding-bottom: 10px !important;
+}
+
+/* Style cho từng đơn hàng */
+.order-item {
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px; /* Đảm bảo chiều cao tối thiểu để chứa nội dung */
+  position: relative;
+}
+
+.order-item:hover {
+  transform: translateY(-2px);
+}
+
+.order-item h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.order-item p {
+  margin: 5px 0;
+  color: #666;
+  word-wrap: break-word; /* Đảm bảo văn bản dài ngắt dòng */
+  max-width: 100%; /* Giới hạn chiều rộng */
+}
+
+/* Nút hành động luôn ở dưới cùng */
+.action-buttons {
+  margin-top: auto; /* Đẩy nút xuống dưới cùng */
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 10px; /* Khoảng cách từ nội dung lên nút */
+}
+
+/* Định nghĩa kích thước nút Sửa và Xóa đồng đều */
+.btn-edit,
+.btn-delete {
+  padding: 8px 15px; /* Đồng bộ padding */
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px; /* Đồng bộ font-size */
+  transition: background-color 0.3s;
+  min-width: 70px; /* Đảm bảo chiều rộng tối thiểu để cân bằng */
+  text-align: center;
+}
+
+.btn-edit {
+  background-color: #ff9800;
+}
+
+.btn-edit:hover {
+  background-color: #f57c00;
+}
+
+.btn-delete {
+  background-color: #f44336;
+}
+
+.btn-delete:hover {
+  background-color: #da190b;
+}
+
+/* Dialog */
+dialog#add-form,
+dialog#edit-form {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 20px 30px;
+  border: none;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.2s ease-in-out;
+  z-index: 1001;
+}
+
+dialog#add-form::backdrop,
+dialog#edit-form::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+/* Animation fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Style cho form trong dialog */
+#addOrderForm,
+#editOrderForm {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#addOrderForm label,
+#editOrderForm label {
+  margin-top: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+#addOrderForm input[type="text"],
+#addOrderForm input[type="date"],
+#addOrderForm input[type="number"],
+#addOrderForm select,
+#editOrderForm input[type="text"],
+#editOrderForm input[type="date"],
+#editOrderForm input[type="number"],
+#editOrderForm select {
+  padding: 10px;
+  margin-top: 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 100%;
+  background-color: #fff;
+}
+
+#addOrderForm input[type="text"]:focus,
+#addOrderForm input[type="date"]:focus,
+#addOrderForm input[type="number"]:focus,
+#addOrderForm select:focus,
+#editOrderForm input[type="text"]:focus,
+#editOrderForm input[type="date"]:focus,
+#editOrderForm input[type="number"]:focus,
+#editOrderForm select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+}
+
+#addOrderForm input[readonly],
+#editOrderForm input[readonly] {
+  background-color: #f9f9f9;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+  padding-bottom: 10px;
+}
+
+.form-buttons button {
+  flex: 1;
+}
+
+.btn-save {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-delete {
+  background-color: #ccc;
+  color: black;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-save:hover,
+.btn-edit:hover {
+  opacity: 0.9;
+}
+
+.btn-delete:hover {
+  background-color: #bbb;
+}
