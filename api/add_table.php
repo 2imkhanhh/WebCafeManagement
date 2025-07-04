@@ -9,8 +9,8 @@ try {
     $conn = $db->getConnection();
 
     $name = $_POST["tableName"];
-    $status = "off"; 
-    $orderID = isset($_POST["orderID"]) ? (int)$_POST["orderID"] : null; // Mặc định NULL nếu không có
+    $status = "off"; // Mặc định trạng thái là 'off'
+    $orderID = null; // Mặc định orderID là NULL
 
     $success = TableModel::addTable($conn, $name, $status, $orderID);
 

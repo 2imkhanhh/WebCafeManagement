@@ -1,8 +1,4 @@
 <div id="mainContent" class="order-container">
-  <div id="category-buttons">
-    <!-- Nút lọc theo danh mục (tùy chỉnh nếu cần) -->
-  </div>
-
   <div id="order-section">
     <h2 class="title">Danh sách đơn hàng</h2>
     <button id="btnShowOrderForm" class="btn-add">+ Thêm Đơn Hàng</button>
@@ -14,15 +10,13 @@
     <h3>Thêm đơn hàng mới</h3>
     <form id="addOrderForm" enctype="application/x-www-form-urlencoded">
       <input type="hidden" id="orderID" name="orderID">
+      <input type="hidden" id="status" name="status" value="unpaid"> <!-- Mặc định ẩn -->
       <label>Ngày:</label><br>
       <input type="date" id="orderDate" name="orderDate" required><br><br>
       <label>Tổng:</label><br>
       <input type="text" id="totalPrice" name="totalPrice" readonly required><br><br>
-      <label>Trạng thái:</label><br>
-      <select id="status" name="status">
-        <option value="Pending">Dùng tại quán</option>
-        <option value="completed">Mang về</option>
-      </select><br><br>
+      <label>Trạng thái: </label><br>
+      <input type="text" id="statusDisplay" value="Chưa thanh toán" readonly><br><br> <!-- Chỉ đọc -->
       <div id="orderItems">
         <h4>Chọn món:</h4>
         <div class="order-item">
@@ -41,19 +35,18 @@
     </form>
   </dialog>
 
+  <!-- Form Sửa -->
   <dialog id="edit-form">
     <h3>Chỉnh sửa đơn hàng</h3>
     <form id="editOrderForm" enctype="application/x-www-form-urlencoded">
       <input type="hidden" id="orderID" name="orderID">
+      <input type="hidden" id="status" name="status" value=""> 
       <label>Ngày:</label><br>
       <input type="date" id="orderDate" name="orderDate" required><br><br>
       <label>Tổng:</label><br>
       <input type="text" id="totalPrice" name="totalPrice" readonly required><br><br>
-      <label>Trạng thái:</label><br>
-      <select id="status" name="status">
-        <option value="Pending">Dùng tại quán</option>
-        <option value="completed">Mang về</option>
-      </select><br><br>
+      <label>Trạng thái: </label><br>
+      <input type="text" id="statusDisplay" value="" readonly><br><br> 
       <div id="orderItems">
         <h4>Chọn món:</h4>
         <div class="order-item">
@@ -64,7 +57,7 @@
       </div>
       <button type="button" id="btnAddItem" class="btn-add">Thêm món</button><br><br>
       <p id="currentTableDisplay"></p>
-      <label>Bàn:</label><br>
+      <label>Chọn bàn trống:</label><br>
       <select id="tableSelect" name="tableID"></select><br><br> 
       <div class="form-buttons">
         <button type="submit" class="btn-save">Lưu</button>
@@ -75,7 +68,6 @@
 </div>
 
 <link rel="stylesheet" href="../assets/css/orders.css">
-
 <script src="OrderController.js"></script>
 <script>
   const mainContent = document.getElementById('mainContent');

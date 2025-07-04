@@ -17,18 +17,25 @@ try {
     $orderID = $input['orderID'] ?? null;
     $orderDate = $input['orderDate'] ?? null;
     $totalPrice = $input['totalPrice'] ?? null;
-    $status = $input['status'] ?? null;
+    $status = null; // Không sử dụng input status
     $tableID = $input['tableID'] ?? null;
     $items = $input['items'] ?? [];
 
-    if (!$orderID || !$orderDate || !$totalPrice || !$status || !$tableID || empty($items)) {
+    if (!$orderID || !$orderDate || !$totalPrice || !$tableID || empty($items)) {
         throw new Exception("Dữ liệu không đầy đủ");
     }
 
-    $success = OrderModel::updateOrder($conn, $orderID, $orderDate, $totalPrice, $status, $tableID, $items);
+    // Lấy trạng thái hiện tại từ database
+    $stmt = $conn->prepare("SELECT status FROM orders WHERE orderID = ?");
+    $stmt->bind_param("i", $orderID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $currentStatus = $result->fetch_assoc()['status'] ?? 'unpaid';
+    $stmt->close();
+
+    $success = OrderModel::updateOrder($conn, $orderID, $orderDate, $totalPrice, $currentStatus, $tableID, $items);
 
     if ($success) {
-        // Lấy previousTableID an toàn với prepared statement
         $stmt = $conn->prepare("SELECT tableID FROM orders WHERE orderID = ?");
         $stmt->bind_param("i", $orderID);
         $stmt->execute();
@@ -37,8 +44,8 @@ try {
         $stmt->close();
 
         if ($previousTableID != $tableID) {
-            TableModel::updateTableStatus($conn, $previousTableID, 'off');
-            TableModel::updateTableStatus($conn, $tableID, 'on');
+            TableModel::updateTableStatus($conn, $previousTableID, 'off', 0);
+            TableModel::updateTableStatus($conn, $tableID, 'on', $orderID);
         }
         echo json_encode(['success' => true, 'message' => 'Cập nhật đơn hàng thành công']);
     } else {

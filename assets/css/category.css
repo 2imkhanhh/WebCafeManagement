@@ -10,12 +10,12 @@ body {
   background-color: #f0f2f5;
   color: #333;
   line-height: 1.6;
-  padding: 20px;
+  margin: 0;
 }
 
 .category-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  padding: 20px;
 }
 
 h1 {

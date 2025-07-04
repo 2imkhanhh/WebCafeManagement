@@ -16,12 +16,12 @@ try {
     $input = json_decode(file_get_contents('php://input'), true);
     $orderDate = $input['orderDate'] ?? null;
     $totalPrice = $input['totalPrice'] ?? null;
-    $status = $input['status'] ?? null;
+    $status = 'unpaid'; // Mặc định là chưa thanh toán, bỏ qua input
     $tableID = $input['tableID'] ?? null;
     $items = $input['items'] ?? [];
 
-    if (!$orderDate || !$totalPrice || !$status || !$tableID || empty($items)) {
-        throw new Exception("Dữ liệu không đầy đủ: orderDate, totalPrice, status, tableID và items là bắt buộc");
+    if (!$orderDate || !$totalPrice || !$tableID || empty($items)) {
+        throw new Exception("Dữ liệu không đầy đủ: orderDate, totalPrice, tableID và items là bắt buộc");
     }
 
     $newOrderID = OrderModel::addOrder($conn, $orderDate, $totalPrice, $status, $tableID, $items);
@@ -37,7 +37,7 @@ try {
     }
     $stmt->close();
 
-    TableModel::updateTableStatus($conn, $tableID, 'on');
+    TableModel::updateTableStatus($conn, $tableID, 'on', $newOrderID);
 
     echo json_encode(['success' => true, 'message' => 'Thêm đơn hàng thành công', 'orderID' => $newOrderID]);
 

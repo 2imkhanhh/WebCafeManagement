@@ -56,9 +56,7 @@ export function handleAddTable(mainContent) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const formData = new URLSearchParams(new FormData(form));
-    const orderID = form.querySelector('#tableOrderID')?.value || '';
-
-    if (orderID) formData.append('orderID', orderID);
+    const tableName = form.querySelector('#tableName').value;
 
     fetch('../api/add_table.php', {
       method: 'POST',
@@ -265,4 +263,3 @@ function showOrderDetails(mainContent, tableId, orderId) {
     mainContent.removeChild(dialog);
   });
 }
-

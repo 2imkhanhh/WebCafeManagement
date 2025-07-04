@@ -24,24 +24,27 @@ class OrderController {
             const order = document.createElement('div');
             order.className = 'order-item';
             const orderDate = item.orderDate;
-            const statusText = item.status === 'completed' ? 'Mang về' : 'Dùng tại quán';
+            const paymentStatus = item.status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán';
             const tableName = item.Name || 'Chưa có';
-            console.log(`Order #${item.orderID}: tableID=${item.tableID}, tableName=${tableName}`);
+            console.log(`Order #${item.orderID}: tableID=${item.tableID}, tableName=${tableName}, status=${item.status}`);
+
             order.innerHTML = `
               <h3>Đơn hàng #${item.orderID}</h3>
               <p>Ngày: ${orderDate}</p>
               <p>Tổng: ${parseInt(item.totalPrice).toLocaleString()}đ</p>
-              <p>Trạng thái: ${statusText}</p>
+              <p>Trạng thái: ${paymentStatus}</p>
               <p>Bàn: ${tableName}</p>
               <div class="action-buttons">
-                <button class="btn-edit" data-id="${item.orderID}">Sửa</button>
-                <button class="btn-delete" data-id="${item.orderID}">Xoá</button>
+                ${item.status === 'paid' ? '' : `<button class="btn-edit" data-id="${item.orderID}">Sửa</button>`}
+                ${item.status === 'paid' ? '' : `<button class="btn-delete" data-id="${item.orderID}">Xoá</button>`}
               </div>
             `;
             orderGrid.appendChild(order);
 
-            order.querySelector('.btn-edit').addEventListener('click', () => this.openEditPopup(mainContent, item));
-            order.querySelector('.btn-delete').addEventListener('click', () => this.handleDeleteOrder(item.orderID, mainContent));
+            if (item.status !== 'paid') {
+              order.querySelector('.btn-edit')?.addEventListener('click', () => this.openEditPopup(mainContent, item));
+              order.querySelector('.btn-delete')?.addEventListener('click', () => this.handleDeleteOrder(item.orderID, mainContent));
+            }
           });
         } else {
           orderGrid.innerHTML = '<p>Không có đơn hàng nào.</p>';
@@ -64,6 +67,19 @@ class OrderController {
         orderForm.showModal();
         this.loadSelectOptions(orderForm);
         form.reset();
+        form.querySelector('#status').value = 'unpaid'; // Mặc định ẩn
+        form.querySelector('#statusDisplay').value = 'Chưa thanh toán'; // Hiển thị
+        const orderItems = orderForm.querySelector('#orderItems');
+        orderItems.innerHTML = '<h4>Chọn món:</h4>'; // Xóa tất cả các ô hiện tại
+        // Luôn hiển thị 1 ô mặc định
+        const newItem = document.createElement('div');
+        newItem.className = 'order-item';
+        newItem.innerHTML = `<select name="drinksID[]" required></select>
+                             <input type="number" name="quantity[]" value="1" min="1" required>
+                             <button type="button" class="btn-remove-item">Xóa</button>`;
+        orderItems.appendChild(newItem);
+        this.loadDrinksForSelect(newItem.querySelector('select'));
+        this.setupEventListeners(newItem);
         this.calculateTotal(orderForm);
       });
 
@@ -75,7 +91,7 @@ class OrderController {
         const orderData = {
           orderDate: formData.get('orderDate'),
           totalPrice: parseInt(formData.get('totalPrice').replace(/[^0-9]/g, '')),
-          status: formData.get('status'),
+          status: 'unpaid', // Mặc định là chưa thanh toán
           tableID: formData.get('tableID'),
           items: []
         };
@@ -110,8 +126,7 @@ class OrderController {
             orderForm.close();
             this.loadOrders(mainContent);
             if (orderData.tableID) {
-              // Lấy orderID từ response của add_order.php (giả sử API trả về orderID)
-              const newOrderId = data.orderID; // Giả sử API trả về { success: true, orderID: ... }
+              const newOrderId = data.orderID; // Giả sử API trả về orderID
               this.updateTableStatus(orderData.tableID, 'on', newOrderId, mainContent);
             }
           } else {
@@ -164,14 +179,13 @@ class OrderController {
       form.querySelector('#orderID').value = order.orderID;
       form.querySelector('#orderDate').value = order.orderDate.split(' ')[0];
       form.querySelector('#totalPrice').value = parseInt(order.totalPrice).toLocaleString() + 'đ';
-      form.querySelector('#status').value = order.status;
+      form.querySelector('#status').value = order.status; // Ẩn, giữ nguyên giá trị
+      form.querySelector('#statusDisplay').value = order.status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'; // Hiển thị
+      form.querySelector('#statusDisplay').disabled = true; // Không cho phép sửa
 
-      // Hiển thị tên bàn hiện tại
       currentTableDisplay.textContent = order.Name ? `Bàn hiện tại: ${order.Name} (ID: ${order.tableID})` : 'Không có bàn';
-
-      // Tải danh sách bàn trống và đặt giá trị mặc định là bàn hiện tại
       this.loadTablesForSelectEdit(tableSelect, order.tableID);
-      tableSelect.value = order.tableID || ''; // Đặt giá trị mặc định là bàn hiện tại
+      tableSelect.value = order.tableID || '';
 
       const orderItems = form.querySelector('#orderItems');
       orderItems.innerHTML = '<h4>Chọn món:</h4>';
@@ -216,13 +230,17 @@ class OrderController {
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (order.status === 'paid') {
+          alert('Đơn hàng đã thanh toán, không thể sửa!');
+          return;
+        }
         const formData = new FormData(form);
         const orderData = {
           orderID: formData.get('orderID'),
           orderDate: formData.get('orderDate'),
           totalPrice: parseInt(formData.get('totalPrice').replace(/[^0-9]/g, '')),
-          status: formData.get('status'),
-          tableID: formData.get('tableID') || order.tableID, // Giữ bàn hiện tại nếu không chọn
+          status: order.status, // Giữ nguyên trạng thái hiện tại
+          tableID: formData.get('tableID') || order.tableID,
           items: []
         };
         const drinksIDs = form.querySelectorAll('select[name="drinksID[]"]');
@@ -251,7 +269,6 @@ class OrderController {
             orderForm.close();
             this.loadOrders(mainContent);
             if (orderData.tableID && order.tableID !== orderData.tableID) {
-              // Cập nhật trạng thái và orderID của bàn cũ
               fetch('../api/update_table_status.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -259,15 +276,10 @@ class OrderController {
               })
               .then(res => res.json())
               .then(statusData => {
-                if (statusData.success) {
-                  console.log(`Cập nhật bàn ${order.tableID} thành orderID = 0 và status = off thành công`);
-                } else {
-                  console.error('Cập nhật bàn cũ thất bại:', statusData.message);
-                }
+                if (statusData.success) console.log(`Cập nhật bàn ${order.tableID} thành công`);
               })
               .catch(err => console.error('Lỗi khi cập nhật bàn cũ:', err));
 
-              // Cập nhật trạng thái và orderID của bàn mới
               fetch('../api/update_table_status.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -275,11 +287,7 @@ class OrderController {
               })
               .then(res => res.json())
               .then(statusData => {
-                if (statusData.success) {
-                  console.log(`Cập nhật bàn ${orderData.tableID} với orderID ${orderData.orderID} và status = on thành công`);
-                } else {
-                  console.error('Cập nhật bàn mới thất bại:', statusData.message);
-                }
+                if (statusData.success) console.log(`Cập nhật bàn ${orderData.tableID} thành công`);
               })
               .catch(err => console.error('Lỗi khi cập nhật bàn mới:', err));
             }
@@ -294,11 +302,8 @@ class OrderController {
       });
 
       const existingAddItemListener = btnAddItem._addItemListener;
-      if (existingAddItemListener) {
-        btnAddItem.removeEventListener('click', existingAddItemListener);
-      }
+      if (existingAddItemListener) btnAddItem.removeEventListener('click', existingAddItemListener);
       btnAddItem._addItemListener = () => {
-        console.log('Nút Thêm món trong form Sửa được nhấn');
         const orderItems = orderForm.querySelector('#orderItems');
         const newItem = document.createElement('div');
         newItem.className = 'order-item';
@@ -343,7 +348,7 @@ class OrderController {
             .then(orders => {
               const order = orders.data.find(o => o.orderID == orderId);
               if (order && order.tableID) {
-                this.updateTableStatus(order.tableID, 'off', mainContent);
+                this.updateTableStatus(order.tableID, 'off', 0, mainContent);
               }
             });
         } else {
@@ -361,7 +366,7 @@ class OrderController {
     fetch('../api/update_table_status.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ tableID: tableId, status: status, orderID: orderId || 0 }) 
+      body: new URLSearchParams({ tableID: tableId, status: status, orderID: orderId || 0 })
     })
     .then(res => {
       if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
@@ -425,7 +430,7 @@ class OrderController {
       .then(data => {
         console.log('Dữ liệu từ get_tables.php cho form sửa:', data);
         if (data.success && Array.isArray(data.data)) {
-          select.innerHTML = '<option value="">-- Chọn bàn trống --</option>'; // Thay đổi tiêu đề
+          select.innerHTML = '<option value="">-- Chọn bàn trống --</option>';
           const availableTables = data.data.filter(table => table.Status === 'off');
           if (availableTables.length > 0) {
             availableTables.forEach(table => {
@@ -433,7 +438,7 @@ class OrderController {
               option.value = table.tableID;
               option.textContent = `${table.Name} (ID: ${table.tableID})`;
               if (table.tableID == currentTableID && table.Status === 'off') {
-                option.selected = true; // Chọn bàn hiện tại nếu nó trống
+                option.selected = true;
               }
               select.appendChild(option);
             });

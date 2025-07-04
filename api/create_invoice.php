@@ -5,6 +5,7 @@ try {
     require_once('../config/database.php');
     require_once('../model/InvoiceModel.php');
     require_once('../model/TableModel.php');
+    require_once('../model/OrderModel.php'); // Thêm để cập nhật trạng thái đơn hàng
 
     $db = new Database();
     $conn = $db->getConnection();
@@ -18,23 +19,43 @@ try {
         exit;
     }
 
+    // Bắt đầu transaction để đảm bảo tính nhất quán
+    $conn->begin_transaction();
+
+    // Tạo hóa đơn
     $success = InvoiceModel::createInvoice($conn, $orderID, $tableID, $total);
 
     if ($success) {
+        // Cập nhật trạng thái đơn hàng thành 'paid'
+        $stmt = $conn->prepare("UPDATE orders SET status = 'paid' WHERE orderID = ?");
+        if ($stmt === false) {
+            throw new Exception("Lỗi chuẩn bị truy vấn cập nhật trạng thái: " . $conn->error);
+        }
+        $stmt->bind_param("i", $orderID);
+        if (!$stmt->execute()) {
+            throw new Exception("Cập nhật trạng thái thanh toán thất bại: " . $conn->error);
+        }
+        $stmt->close();
+
         // Cập nhật trạng thái bàn về off
         TableModel::clearTableAfterPayment($conn, $tableID);
 
+        $conn->commit(); // Commit transaction
+
         echo json_encode([
             'success' => true,
-            'message' => 'Tạo hóa đơn thành công'
+            'message' => 'Tạo hóa đơn và thanh toán thành công'
         ]);
     } else {
+        $conn->rollback(); // Rollback nếu có lỗi
         echo json_encode([
             'success' => false,
             'message' => 'Tạo hóa đơn thất bại'
         ]);
     }
 } catch (Exception $e) {
+    $conn->rollback(); // Rollback nếu có exception
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
+?>

@@ -14,11 +14,9 @@
     <form id="tableForm" enctype="application/x-www-form-urlencoded">
       <label>Tên bàn:</label><br>
       <input type="text" id="tableName" name="tableName" required><br><br>
-      <label>Order ID (tùy chọn):</label><br>
-      <input type="number" id="tableOrderID" name="orderID"><br><br>
       <div class="form-buttons">
         <button type="submit" class="btn-save">Lưu</button>
-        <button type="button" id="btnCancelTable" class="btn-delete">Huỷ</button>
+        <button type="button" id="btnCancelTable" class="btn-cancel">Huỷ</button>
       </div>
     </form>
   </dialog>
@@ -38,7 +36,7 @@
       <input type="number" id="editTableOrderID" disabled><br><br>
       <div class="form-buttons">
         <button type="submit" class="btn-save">Lưu</button>
-        <button type="button" id="btnCancelEditTable" class="btn-delete">Huỷ</button>
+        <button type="button" id="btnCancelEditTable" class="btn-cancel">Huỷ</button>
       </div>
     </form>
   </dialog>
