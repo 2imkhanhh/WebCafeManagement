@@ -18,7 +18,10 @@ try {
         throw new Exception("Mã đơn hàng không hợp lệ");
     }
 
-    $stmt = $conn->prepare("SELECT * FROM order_details WHERE orderID = ?");
+    $stmt = $conn->prepare("SELECT od.orderID, od.drinksID, od.quantity, od.price, d.Name 
+                           FROM order_details od 
+                           JOIN drinks d ON od.drinksID = d.drinksID 
+                           WHERE od.orderID = ?");
     $stmt->bind_param("i", $orderID);
     $stmt->execute();
     $result = $stmt->get_result();

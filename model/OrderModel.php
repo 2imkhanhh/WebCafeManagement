@@ -18,36 +18,63 @@ class OrderModel {
         $success = $stmt->execute();
         $stmt->close();
 
-        if ($success) {
-            $newOrderID = $conn->insert_id;
-            foreach ($items as $item) {
-                $drinksID = $item['drinksID'];
-                $quantity = $item['quantity'];
-                $price = 0;
-                $stmt = $conn->prepare("SELECT Price FROM drinks WHERE drinksID = ?");
-                $stmt->bind_param("i", $drinksID);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                if ($row = $result->fetch_assoc()) {
-                    $price = $row['Price'] * $quantity;
-                }
-                $stmt->close();
-
-                $stmt = $conn->prepare("INSERT INTO order_details (orderID, drinksID, quantity, price) VALUES (?, ?, ?, ?)");
-                $stmt->bind_param("iiid", $newOrderID, $drinksID, $quantity, $price);
-                if (!$stmt->execute()) {
-                    $conn->rollback();
-                    return false;
-                }
-                $stmt->close();
-            }
-            $conn->commit();
-            // Cập nhật trạng thái bàn
-            self::updateTableStatus($conn, $tableID, 'on', $newOrderID);
-            return true;
+        if (!$success) {
+            error_log("Lỗi khi thực thi INSERT INTO orders: " . $conn->error);
+            $conn->rollback();
+            return false;
         }
-        $conn->rollback();
-        return false;
+
+        $newOrderID = $conn->insert_id;
+        error_log("Inserted orderID immediately after INSERT: " . $newOrderID); // Debug
+        if ($newOrderID == 0) {
+            error_log("Lỗi: insert_id là 0, kiểm tra LAST_INSERT_ID()");
+            $stmt = $conn->prepare("SELECT LAST_INSERT_ID() as orderID");
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $newOrderID = $row['orderID'];
+            $stmt->close();
+            error_log("Retrieved orderID from LAST_INSERT_ID: " . $newOrderID);
+            if ($newOrderID == 0) {
+                error_log("Không thể lấy ID tự động: " . $conn->error);
+                $conn->rollback();
+                return false;
+            }
+        }
+
+        if (empty($items)) {
+            error_log("No items provided for orderID: " . $newOrderID);
+            $conn->rollback();
+            return false;
+        }
+
+        foreach ($items as $item) {
+            $drinksID = $item['drinksID'];
+            $quantity = $item['quantity'];
+            $price = 0;
+            $stmt = $conn->prepare("SELECT Price FROM drinks WHERE drinksID = ?");
+            $stmt->bind_param("i", $drinksID);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                $price = $row['Price'] * $quantity;
+            }
+            $stmt->close();
+
+            $stmt = $conn->prepare("INSERT INTO order_details (orderID, drinksID, quantity, price) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiid", $newOrderID, $drinksID, $quantity, $price);
+            if (!$stmt->execute()) {
+                error_log("Lỗi khi thêm order_details cho orderID " . $newOrderID . ": " . $conn->error);
+                $conn->rollback();
+                return false;
+            }
+            $stmt->close();
+        }
+
+        $conn->commit();
+        error_log("Giao dịch commit thành công cho orderID: " . $newOrderID);
+        self::updateTableStatus($conn, $tableID, 'on', $newOrderID);
+        return $newOrderID;
     }
 
     public static function updateOrder($conn, $orderID, $orderDate, $totalPrice, $status, $tableID, $items) {

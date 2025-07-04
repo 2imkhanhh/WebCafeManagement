@@ -34,11 +34,8 @@ function loadTables(mainContent) {
           const viewOrderBtn = tableItem.querySelector('.btn-view-order');
           viewOrderBtn.addEventListener('click', () => {
             const orderId = table.orderID ? parseInt(table.orderID) : null;
-            if (orderId) {
-              showOrderDetails(mainContent, table.tableID, orderId);
-            } else {
-              alert('Chưa có đơn hàng cho bàn này.');
-            }
+            console.log('View Order clicked for table', table.tableID, 'with orderId', orderId); // Debug
+            showOrderDetails(mainContent, table.tableID, orderId);
           });
         });
       } else {
@@ -118,9 +115,9 @@ function openEditPopup(mainContent, table) {
   form.onsubmit = function (e) {
     e.preventDefault();
     const formData = new URLSearchParams(new FormData(form));
-    const orderID = form.querySelector('#editTableOrderID').value || null;
+    // const orderID = form.querySelector('#editTableOrderID').value || null;
 
-    if (orderID) formData.append('orderID', orderID);
+    // if (orderID) formData.append('orderID', orderID);
 
     fetch('../api/update_table.php', {
       method: 'POST',
@@ -178,44 +175,47 @@ function showOrderDetails(mainContent, tableId, orderId) {
   `;
   mainContent.appendChild(dialog);
 
-  if (orderId) {
-    fetch('../api/get_order_by_id.php?orderID=' + orderId)
-      .then(res => res.json())
-      .then(data => {
-        const content = document.getElementById('order-details-content');
-        if (data.success && data.data) {
-          const order = data.data;
-          fetch('../api/get_drink_by_id.php?drinksID=' + order.drinksID)
-            .then(res => res.json())
-            .then(drinkData => {
-              if (drinkData.success && drinkData.data) {
-                const drink = drinkData.data;
-                content.innerHTML = `
-                  <p>Order ID: ${order.orderID}</p>
-                  <p>Ngày: ${order.orderDate}</p>
-                  <p>Tên món: ${drink.Name}</p>
-                  <p>Số lượng: ${order.quantity}</p>
-                  <p>Giá tiền: ${parseInt(drink.Price).toLocaleString()}đ</p>
-                  <p>Tổng tiền: ${parseInt(order.totalPrice).toLocaleString()}đ</p>
-                `;
-              } else {
-                content.innerHTML = '<p>Không tìm thấy thông tin món.</p>';
-              }
-            })
-            .catch(err => {
-              console.error('Lỗi khi tải thông tin món:', err);
-              content.innerHTML = '<p>Lỗi khi tải thông tin món.</p>';
-            });
-        } else {
-          content.innerHTML = '<p>Không có đơn hàng cho bàn này.</p>';
-        }
-      })
-      .catch(err => {
-        console.error('Lỗi khi tải chi tiết đơn hàng:', err);
-        document.getElementById('order-details-content').innerHTML = '<p>Lỗi khi tải chi tiết đơn hàng.</p>';
-      });
+  console.log('Fetching order details for orderId:', orderId); // Debug
+  if (orderId && orderId > 0) { // Chỉ gọi API nếu orderId là số dương hợp lệ
+    Promise.all([
+      fetch('../api/get_order_by_id.php?orderID=' + orderId).then(res => res.json()),
+      fetch('../api/get_order_details.php?orderID=' + orderId).then(res => res.json())
+    ])
+    .then(([orderResponse, detailsResponse]) => {
+      console.log('Order response:', orderResponse); // Debug
+      console.log('Details response:', detailsResponse); // Debug
+      const content = document.getElementById('order-details-content');
+      if (orderResponse.success && orderResponse.data && detailsResponse.success && Array.isArray(detailsResponse.data)) {
+        const order = orderResponse.data;
+        const details = detailsResponse.data;
+
+        let itemsHtml = '<ul>';
+        details.forEach(item => {
+          itemsHtml += `
+            <li>
+              Món: ${item.Name || 'Không xác định'}, Số lượng: ${item.quantity}, Giá: ${parseInt(item.price).toLocaleString()}đ
+            </li>
+          `;
+        });
+        itemsHtml += '</ul>';
+
+        content.innerHTML = `
+          <p>Order ID: ${order.orderID}</p>
+          <p>Ngày: ${order.orderDate}</p>
+          <p>Danh sách món:</p>
+          ${itemsHtml}
+          <p>Tổng tiền: ${parseInt(order.totalPrice).toLocaleString()}đ</p>
+        `;
+      } else {
+        content.innerHTML = '<p>Không có đơn hàng hoặc dữ liệu không hợp lệ. Order: ' + JSON.stringify(orderResponse) + ', Details: ' + JSON.stringify(detailsResponse) + '</p>';
+      }
+    })
+    .catch(err => {
+      console.error('Lỗi khi tải chi tiết đơn hàng:', err);
+      document.getElementById('order-details-content').innerHTML = '<p>Lỗi khi tải chi tiết đơn hàng: ' + err.message + '</p>';
+    });
   } else {
-    document.getElementById('order-details-content').innerHTML = '<p>Chưa có đơn hàng cho bàn này.</p>';
+    document.getElementById('order-details-content').innerHTML = '<p>Chưa có đơn hàng hợp lệ cho bàn này (orderId: ' + orderId + ').</p>';
   }
 
   dialog.showModal();
