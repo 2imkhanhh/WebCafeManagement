@@ -55,5 +55,19 @@ class TableModel {
 
         return $success;
     }
+
+    public static function clearTableAfterPayment($conn, $tableID) {
+        $stmt = $conn->prepare("UPDATE tablecafe SET Status = 'off', orderID = NULL WHERE tableID = ?");
+        if ($stmt === false) {
+            throw new Exception("Lỗi chuẩn bị truy vấn: " . $conn->error);
+        }
+
+        $stmt->bind_param("i", $tableID);
+
+        $success = $stmt->execute();
+        $stmt->close();
+
+        return $success;
+    }
 }
 ?>

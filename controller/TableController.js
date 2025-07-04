@@ -175,16 +175,19 @@ function showOrderDetails(mainContent, tableId, orderId) {
   `;
   mainContent.appendChild(dialog);
 
-  console.log('Fetching order details for orderId:', orderId); // Debug
-  if (orderId && orderId > 0) { // Chỉ gọi API nếu orderId là số dương hợp lệ
+  console.log('Fetching order details for orderId:', orderId);
+
+  if (orderId && orderId > 0) {
     Promise.all([
       fetch('../api/get_order_by_id.php?orderID=' + orderId).then(res => res.json()),
       fetch('../api/get_order_details.php?orderID=' + orderId).then(res => res.json())
     ])
     .then(([orderResponse, detailsResponse]) => {
-      console.log('Order response:', orderResponse); // Debug
-      console.log('Details response:', detailsResponse); // Debug
+      console.log('Order response:', orderResponse);
+      console.log('Details response:', detailsResponse);
+
       const content = document.getElementById('order-details-content');
+
       if (orderResponse.success && orderResponse.data && detailsResponse.success && Array.isArray(detailsResponse.data)) {
         const order = orderResponse.data;
         const details = detailsResponse.data;
@@ -206,8 +209,44 @@ function showOrderDetails(mainContent, tableId, orderId) {
           ${itemsHtml}
           <p>Tổng tiền: ${parseInt(order.totalPrice).toLocaleString()}đ</p>
         `;
+
+        // ✅ Nút thanh toán bên trong phạm vi order
+        const payBtn = document.createElement('button');
+        payBtn.textContent = 'Thanh toán';
+        payBtn.className = 'btn-save';
+        payBtn.addEventListener('click', () => {
+          if (confirm('Xác nhận thanh toán?')) {
+            fetch('../api/create_invoice.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                orderID: order.orderID,
+                total: order.totalPrice,
+                tableID: tableId
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                alert('Đã tạo hóa đơn!');
+                dialog.close();
+                mainContent.removeChild(dialog);
+                loadTables(mainContent);
+              } else {
+                alert('Lỗi: ' + data.message);
+              }
+            })
+            .catch(err => {
+              console.error('Lỗi khi tạo hóa đơn:', err);
+              alert('Lỗi khi tạo hóa đơn: ' + err.message);
+            });
+          }
+        });
+
+        dialog.appendChild(payBtn);
+
       } else {
-        content.innerHTML = '<p>Không có đơn hàng hoặc dữ liệu không hợp lệ. Order: ' + JSON.stringify(orderResponse) + ', Details: ' + JSON.stringify(detailsResponse) + '</p>';
+        content.innerHTML = '<p>Không có đơn hàng hoặc dữ liệu không hợp lệ.</p>';
       }
     })
     .catch(err => {
@@ -220,9 +259,10 @@ function showOrderDetails(mainContent, tableId, orderId) {
 
   dialog.showModal();
 
-  const closeBtn = document.getElementById('btnCloseOrderDetails');
+  const closeBtn = dialog.querySelector('#btnCloseOrderDetails');
   closeBtn.addEventListener('click', () => {
     dialog.close();
     mainContent.removeChild(dialog);
   });
 }
+

@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 try {
     require_once("../config/database.php");
     require_once("../model/OrderModel.php");
-    require_once("../model/TableModel.php");
+    require_once("../model/TableModel.php"); // Đảm bảo file này tồn tại
 
     $db = new Database();
     $conn = $db->getConnection();
@@ -21,6 +21,9 @@ try {
 
     // Lấy thông tin đơn hàng trước khi xoá
     $order = OrderModel::getOrderById($conn, $orderID);
+    if (!$order) {
+        throw new Exception("Không tìm thấy đơn hàng với ID: " . $orderID);
+    }
     $tableID = $order['tableID'] ?? null;
 
     $success = OrderModel::deleteOrder($conn, $orderID);
@@ -28,7 +31,10 @@ try {
     if ($success) {
         if ($tableID) {
             // Cập nhật lại trạng thái bàn và orderID về 0
-            TableModel::updateTableStatus($conn, $tableID, 'off');
+            $success = TableModel::updateTableStatus($conn, $tableID, 'off'); // Kiểm tra hàm này
+            if (!$success) {
+                throw new Exception("Cập nhật trạng thái bàn thất bại");
+            }
             $stmt = $conn->prepare("UPDATE tablecafe SET orderID = 0 WHERE tableID = ?");
             $stmt->bind_param("i", $tableID);
             $stmt->execute();
@@ -40,5 +46,7 @@ try {
     }
 } catch (Exception $e) {
     http_response_code(500);
+    error_log("Lỗi khi xóa đơn hàng: " . $e->getMessage()); // Log lỗi để debug
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
+?>

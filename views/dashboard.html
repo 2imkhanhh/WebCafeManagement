@@ -19,7 +19,7 @@
         <button id="btn-staff">Quản lý nhân viên</button>
         <button id="btn-category">Quản lý danh mục</button>
         <button id="btn-orders">Quản lý đơn hàng</button>
-        <button >Quản lý hoá đơn</button>
+        <button id="btn-invoices">Quản lý hoá đơn</button>
         <button id="btn-tables">Quản lý bàn</button>
         <button id="logout">Đăng xuất</button>
       </nav>
@@ -43,6 +43,7 @@
     import OrderController from '../controller/OrderController.js';
     import { initDrinksPage } from '../controller/DrinkController.js';
     import { initTablePage } from '../controller/TableController.js';
+    import InvoiceController from '../controller/InvoiceController.js';
     
     document.getElementById('logout').addEventListener('click', function () {
       window.location.href = '../views/login.html';
@@ -118,6 +119,17 @@
         document.body.appendChild(script);
       })
       .catch(error => console.error('Lỗi tải category.html:', error));
+    });
+
+    document.getElementById('btn-invoices').addEventListener('click', () => {
+    fetch('../views/invoices.html')
+      .then(res => res.text())
+      .then(html => {
+        const mainContent = document.getElementById('main-content');
+        mainContent.innerHTML = html;
+        InvoiceController.initInvoices(mainContent); 
+      })
+      .catch(err => console.error('Lỗi khi tải hóa đơn:', err));
     });
   </script>
 </body>

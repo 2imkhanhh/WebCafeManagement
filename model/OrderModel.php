@@ -160,13 +160,23 @@ class OrderModel {
         $conn->begin_transaction();
 
         try {
-            // Bước 1: Xóa các bản ghi trong order_details liên quan đến orderID
-            $stmt = $conn->prepare("DELETE FROM order_details WHERE orderID = ?");
+            // Bước 1: Xóa các bản ghi trong invoices liên quan đến orderID
+            $stmt = $conn->prepare("DELETE FROM invoices WHERE orderID = ?");
             $stmt->bind_param("i", $orderID);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                throw new Exception("Lỗi xóa invoices: " . $conn->error);
+            }
             $stmt->close();
 
-            // Bước 2: Xóa bản ghi trong orders
+            // Bước 2: Xóa các bản ghi trong order_details liên quan đến orderID
+            $stmt = $conn->prepare("DELETE FROM order_details WHERE orderID = ?");
+            $stmt->bind_param("i", $orderID);
+            if (!$stmt->execute()) {
+                throw new Exception("Lỗi xóa order_details: " . $conn->error);
+            }
+            $stmt->close();
+
+            // Bước 3: Xóa bản ghi trong orders
             $sql = "DELETE FROM orders WHERE orderID = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $orderID);
@@ -174,12 +184,7 @@ class OrderModel {
             $stmt->close();
 
             if ($success) {
-                // Lấy thông tin bàn trước khi commit
-                $order = self::getOrderById($conn, $orderID); // Lưu ý: getOrderById sẽ trả về null sau khi xóa
                 $conn->commit();
-                if ($order && $order['tableID']) {
-                    self::updateTableStatus($conn, $order['tableID'], 'off', 0);
-                }
                 return true;
             } else {
                 $conn->rollback();
@@ -187,6 +192,7 @@ class OrderModel {
             }
         } catch (Exception $e) {
             $conn->rollback();
+            error_log("Lỗi trong deleteOrder: " . $e->getMessage());
             return false;
         }
     }
