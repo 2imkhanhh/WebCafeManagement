@@ -109,7 +109,11 @@ class OrderController {
             alert('Đã thêm đơn hàng!');
             orderForm.close();
             this.loadOrders(mainContent);
-            if (orderData.tableID) this.updateTableStatus(orderData.tableID, 'on', mainContent);
+            if (orderData.tableID) {
+              // Lấy orderID từ response của add_order.php (giả sử API trả về orderID)
+              const newOrderId = data.orderID; // Giả sử API trả về { success: true, orderID: ... }
+              this.updateTableStatus(orderData.tableID, 'on', newOrderId, mainContent);
+            }
           } else {
             alert(`Lỗi khi thêm đơn hàng: ${data.message || 'Không xác định'}`);
           }
@@ -247,8 +251,37 @@ class OrderController {
             orderForm.close();
             this.loadOrders(mainContent);
             if (orderData.tableID && order.tableID !== orderData.tableID) {
-              this.updateTableStatus(order.tableID, 'off', mainContent);
-              this.updateTableStatus(orderData.tableID, 'on', mainContent);
+              // Cập nhật trạng thái và orderID của bàn cũ
+              fetch('../api/update_table_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ tableID: order.tableID, status: 'off', orderID: 0 })
+              })
+              .then(res => res.json())
+              .then(statusData => {
+                if (statusData.success) {
+                  console.log(`Cập nhật bàn ${order.tableID} thành orderID = 0 và status = off thành công`);
+                } else {
+                  console.error('Cập nhật bàn cũ thất bại:', statusData.message);
+                }
+              })
+              .catch(err => console.error('Lỗi khi cập nhật bàn cũ:', err));
+
+              // Cập nhật trạng thái và orderID của bàn mới
+              fetch('../api/update_table_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ tableID: orderData.tableID, status: 'on', orderID: orderData.orderID })
+              })
+              .then(res => res.json())
+              .then(statusData => {
+                if (statusData.success) {
+                  console.log(`Cập nhật bàn ${orderData.tableID} với orderID ${orderData.orderID} và status = on thành công`);
+                } else {
+                  console.error('Cập nhật bàn mới thất bại:', statusData.message);
+                }
+              })
+              .catch(err => console.error('Lỗi khi cập nhật bàn mới:', err));
             }
           } else {
             alert(`Cập nhật thất bại: ${data.message || 'Không xác định'}`);
@@ -324,11 +357,11 @@ class OrderController {
     }
   }
 
-  static updateTableStatus(tableId, status, mainContent) {
+  static updateTableStatus(tableId, status, orderId, mainContent) {
     fetch('../api/update_table_status.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ tableID: tableId, status: status })
+      body: new URLSearchParams({ tableID: tableId, status: status, orderID: orderId || 0 }) 
     })
     .then(res => {
       if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
@@ -336,7 +369,7 @@ class OrderController {
     })
     .then(data => {
       if (data.success) {
-        console.log(`Cập nhật trạng thái bàn ${tableId} thành ${status} thành công`);
+        console.log(`Cập nhật trạng thái bàn ${tableId} thành ${status} với orderID ${orderId || 0} thành công`);
         this.loadOrders(mainContent);
       } else {
         console.error('Cập nhật trạng thái bàn thất bại:', data.message);
