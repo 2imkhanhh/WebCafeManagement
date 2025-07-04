@@ -149,14 +149,19 @@ class OrderController {
     const orderForm = mainContent.querySelector('#edit-form');
     const form = mainContent.querySelector('#editOrderForm');
     const btnCancelOrder = mainContent.querySelector('#btnCancelEdit');
+    const btnAddItem = orderForm.querySelector('#btnAddItem');
 
-    if (orderForm && form && btnCancelOrder) {
+    if (orderForm && form && btnCancelOrder && btnAddItem) {
       orderForm.showModal();
       form.querySelector('#orderID').value = order.orderID;
       form.querySelector('#orderDate').value = order.orderDate.split(' ')[0];
+      // Đặt giá trị tổng ban đầu từ order.totalPrice
       form.querySelector('#totalPrice').value = parseInt(order.totalPrice).toLocaleString() + 'đ';
       form.querySelector('#status').value = order.status;
       form.querySelector('#tableSelect').value = order.tableID;
+
+      // Tải danh sách bàn và món khi mở form sửa
+      this.loadSelectOptions(orderForm);
 
       const orderItems = form.querySelector('#orderItems');
       orderItems.innerHTML = '<h4>Chọn món:</h4>';
@@ -167,20 +172,37 @@ class OrderController {
         })
         .then(data => {
           if (data.success && Array.isArray(data.data)) {
+            const itemElements = [];
             data.data.forEach(item => {
               const newItem = document.createElement('div');
               newItem.className = 'order-item';
               newItem.innerHTML = `<select name="drinksID[]" required></select>
-                                   <input type="number" name="quantity[]" value="${item.quantity}" min="1" required>
-                                   <button type="button" class="btn-remove-item">Xóa</button>`;
+                                  <input type="number" name="quantity[]" value="${item.quantity || 1}" min="1" required>
+                                  <button type="button" class="btn-remove-item">Xóa</button>`;
               orderItems.appendChild(newItem);
-              this.loadDrinksForSelect(newItem.querySelector('select'), item.drinksID);
+              itemElements.push({ element: newItem.querySelector('select'), selectedId: item.drinksID });
             });
-            this.calculateTotal(orderForm);
-            this.setupEventListeners(orderForm);
+
+            // Tải danh sách món và chọn giá trị sau khi tất cả ô được thêm
+            const loadPromises = itemElements.map(({ element, selectedId }) =>
+              new Promise(resolve => {
+                this.loadDrinksForSelect(element, selectedId, () => resolve());
+              })
+            );
+            Promise.all(loadPromises).then(() => {
+              // Tính tổng lại sau khi tất cả món được tải và chọn
+              this.calculateTotal(orderForm);
+              this.setupEventListeners(orderForm);
+            });
+          } else {
+            console.warn('Không có chi tiết đơn hàng:', data);
+            orderItems.innerHTML += '<p>Không có món nào trong đơn hàng.</p>';
           }
         })
-        .catch(err => console.error('Lỗi khi tải chi tiết đơn hàng:', err));
+        .catch(err => {
+          console.error('Lỗi khi tải chi tiết đơn hàng:', err);
+          orderItems.innerHTML += '<p>Lỗi: Không thể tải chi tiết đơn hàng.</p>';
+        });
 
       btnCancelOrder.addEventListener('click', () => orderForm.close());
 
@@ -234,18 +256,26 @@ class OrderController {
         });
       });
 
-      document.getElementById('btnAddItem').addEventListener('click', () => {
+      // Xóa sự kiện cũ trước khi gắn mới
+      const existingAddItemListener = btnAddItem._addItemListener;
+      if (existingAddItemListener) {
+        btnAddItem.removeEventListener('click', existingAddItemListener);
+      }
+      // Gắn sự kiện mới
+      btnAddItem._addItemListener = () => {
+        console.log('Nút Thêm món trong form Sửa được nhấn');
         const orderItems = orderForm.querySelector('#orderItems');
         const newItem = document.createElement('div');
         newItem.className = 'order-item';
         newItem.innerHTML = `<select name="drinksID[]" required></select>
-                             <input type="number" name="quantity[]" value="1" min="1" required>
-                             <button type="button" class="btn-remove-item">Xóa</button>`;
+                            <input type="number" name="quantity[]" value="1" min="1" required>
+                            <button type="button" class="btn-remove-item">Xóa</button>`;
         orderItems.appendChild(newItem);
         this.loadDrinksForSelect(newItem.querySelector('select'));
         this.setupEventListeners(newItem);
         this.calculateTotal(orderForm);
-      });
+      };
+      btnAddItem.addEventListener('click', btnAddItem._addItemListener);
 
       document.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-remove-item')) {
@@ -254,7 +284,7 @@ class OrderController {
         }
       });
     } else {
-      console.error('Không tìm thấy form hoặc các phần tử liên quan:', { orderForm, form, btnCancelOrder });
+      console.error('Không tìm thấy form hoặc các phần tử liên quan:', { orderForm, form, btnCancelOrder, btnAddItem });
     }
   }
 
@@ -326,29 +356,39 @@ class OrderController {
         return res.json();
       })
       .then(data => {
+        console.log('Dữ liệu từ get_tables.php:', data); // Debug
         if (data.success && Array.isArray(data.data)) {
           select.innerHTML = '<option value="">-- Chọn bàn trống --</option>';
-          data.data.filter(table => table.Status === 'off').forEach(table => {
-            const option = document.createElement('option');
-            option.value = table.tableID;
-            option.textContent = `Bàn ${table.Name} (ID: ${table.tableID})`;
-            select.appendChild(option);
-          });
+          const availableTables = data.data.filter(table => table.Status === 'off');
+          if (availableTables.length > 0) {
+            availableTables.forEach(table => {
+              const option = document.createElement('option');
+              option.value = table.tableID;
+              option.textContent = `Bàn ${table.Name} (ID: ${table.tableID})`;
+              select.appendChild(option);
+            });
+          } else {
+            select.innerHTML += '<option value="" disabled>Không có bàn trống</option>';
+          }
         } else {
           console.warn('Không có dữ liệu bàn hoặc API trả về lỗi:', data);
-          select.innerHTML = '<option value="" disabled>Không có bàn trống</option>';
+          select.innerHTML = '<option value="" disabled>Không thể tải danh sách bàn</option>';
         }
       })
-      .catch(err => console.error('Lỗi khi tải danh sách bàn:', err));
+      .catch(err => {
+        console.error('Lỗi khi tải danh sách bàn:', err);
+        select.innerHTML = '<option value="" disabled>Không thể tải danh sách bàn</option>';
+      });
   }
 
-  static loadDrinksForSelect(select, selectedId = null) {
+  static loadDrinksForSelect(select, selectedId = null, callback = () => {}) {
     fetch('../api/get_drinks.php')
       .then(res => {
         if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
         return res.json();
       })
       .then(data => {
+        console.log('Dữ liệu từ get_drinks.php:', data); // Debug
         if (data.success && Array.isArray(data.data)) {
           select.innerHTML = '<option value="">-- Chọn món --</option>';
           data.data.forEach(drink => {
@@ -361,10 +401,15 @@ class OrderController {
           });
         } else {
           console.warn('Không có dữ liệu món hoặc API trả về lỗi:', data);
-          select.innerHTML = '<option value="" disabled>Không có món nào</option>';
+          select.innerHTML = '<option value="" disabled>Không thể tải danh sách món</option>';
         }
+        callback(); // Gọi callback sau khi tải xong
       })
-      .catch(err => console.error('Lỗi khi tải danh sách món:', err));
+      .catch(err => {
+        console.error('Lỗi khi tải danh sách món:', err);
+        select.innerHTML = '<option value="" disabled>Không thể tải danh sách món</option>';
+        callback(); // Gọi callback ngay cả khi có lỗi
+      });
   }
 
   static calculateTotal(orderForm) {

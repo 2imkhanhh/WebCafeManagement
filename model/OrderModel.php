@@ -54,7 +54,7 @@ class OrderModel {
         $conn->begin_transaction();
         $sql = "UPDATE orders SET orderDate=?, totalPrice=?, status=?, tableID=? WHERE orderID=?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sdsi", $orderDate, $totalPrice, $status, $tableID, $orderID);
+        $stmt->bind_param("sdssi", $orderDate, $totalPrice, $status, $tableID, $orderID);
         $success = $stmt->execute();
         $stmt->close();
 
@@ -99,10 +99,10 @@ class OrderModel {
     }
 
     public static function getOrderById($conn, $orderID) {
-        $sql = "SELECT orderID, DATE(orderDate) AS orderDate, totalPrice, status, tableID, t.Name 
+        $sql = "SELECT o.orderID, DATE(o.orderDate) AS orderDate, o.totalPrice, o.status, o.tableID, t.Name 
                 FROM orders o 
                 LEFT JOIN tablecafe t ON o.tableID = t.tableID 
-                WHERE orderID = ?";
+                WHERE o.orderID = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $orderID);
         $stmt->execute();
@@ -131,20 +131,37 @@ class OrderModel {
 
     public static function deleteOrder($conn, $orderID) {
         $conn->begin_transaction();
-        $order = self::getOrderById($conn, $orderID);
-        $sql = "DELETE FROM orders WHERE orderID = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $orderID);
-        $success = $stmt->execute();
-        $stmt->close();
 
-        if ($success && $order && $order['tableID']) {
-            self::updateTableStatus($conn, $order['tableID'], 'off', 0);
-            $conn->commit();
-            return true;
+        try {
+            // Bước 1: Xóa các bản ghi trong order_details liên quan đến orderID
+            $stmt = $conn->prepare("DELETE FROM order_details WHERE orderID = ?");
+            $stmt->bind_param("i", $orderID);
+            $stmt->execute();
+            $stmt->close();
+
+            // Bước 2: Xóa bản ghi trong orders
+            $sql = "DELETE FROM orders WHERE orderID = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $orderID);
+            $success = $stmt->execute();
+            $stmt->close();
+
+            if ($success) {
+                // Lấy thông tin bàn trước khi commit
+                $order = self::getOrderById($conn, $orderID); // Lưu ý: getOrderById sẽ trả về null sau khi xóa
+                $conn->commit();
+                if ($order && $order['tableID']) {
+                    self::updateTableStatus($conn, $order['tableID'], 'off', 0);
+                }
+                return true;
+            } else {
+                $conn->rollback();
+                return false;
+            }
+        } catch (Exception $e) {
+            $conn->rollback();
+            return false;
         }
-        $conn->rollback();
-        return false;
     }
 
     public static function updateTableStatus($conn, $tableID, $status, $orderID) {

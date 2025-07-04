@@ -28,7 +28,14 @@ try {
     $success = OrderModel::updateOrder($conn, $orderID, $orderDate, $totalPrice, $status, $tableID, $items);
 
     if ($success) {
-        $previousTableID = $conn->query("SELECT tableID FROM orders WHERE orderID = $orderID")->fetch_assoc()['tableID'];
+        // Lấy previousTableID an toàn với prepared statement
+        $stmt = $conn->prepare("SELECT tableID FROM orders WHERE orderID = ?");
+        $stmt->bind_param("i", $orderID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $previousTableID = $result->fetch_assoc()['tableID'] ?? null;
+        $stmt->close();
+
         if ($previousTableID != $tableID) {
             TableModel::updateTableStatus($conn, $previousTableID, 'off');
             TableModel::updateTableStatus($conn, $tableID, 'on');

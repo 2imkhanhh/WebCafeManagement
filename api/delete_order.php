@@ -18,10 +18,17 @@ try {
         throw new Exception("Mã đơn hàng không hợp lệ");
     }
 
+    // Lấy thông tin bàn trước khi xóa
+    $stmt = $conn->prepare("SELECT tableID FROM orders WHERE orderID = ?");
+    $stmt->bind_param("i", $orderID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $order = $result->fetch_assoc();
+    $stmt->close();
+
     $success = OrderModel::deleteOrder($conn, $orderID);
 
     if ($success) {
-        $order = $conn->query("SELECT tableID FROM orders WHERE orderID = $orderID")->fetch_assoc();
         if ($order && $order['tableID']) {
             require_once("../model/TableModel.php");
             TableModel::updateTableStatus($conn, $order['tableID'], 'off');
