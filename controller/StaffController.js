@@ -95,59 +95,58 @@ function calculateSalary(formType) {
 
     // Xử lý thêm nhân viên
     staffForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const newStaff = {
-    name: document.getElementById('name').value,
-    phone: document.getElementById('phone').value,
-    role: document.getElementById('role').value,
-    salary: parseFloat(document.getElementById('salary').value),
-    day_off: parseInt(document.getElementById('dayOff').value)
-  };
+      e.preventDefault();
+      const newStaff = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        role: document.getElementById('role').value,
+        salary: parseFloat(document.getElementById('salary').value),
+        day_off: parseInt(document.getElementById('dayOff').value)
+      };
 
-  console.log('Gửi yêu cầu thêm đến:', '/CafeManagement (1)/api/add_staff.php');
-  console.log('Dữ liệu gửi:', newStaff);
+      console.log('Gửi yêu cầu thêm đến:', '/CafeManagement/api/add_staff.php');
+      console.log('Dữ liệu gửi:', newStaff);
 
-  fetch('/CafeManagement (1)/api/add_staff.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newStaff)
-  })
-  .then(res => {
-    if (!res.ok) throw new Error(`Lỗi HTTP ${res.status}: ${res.statusText}`);
-    return res.text(); // Sử dụng res.text() để debug phản hồi thô
-  })
-  .then(text => {
-    console.log('Phản hồi thô từ server:', text);
-    try {
-      const data = JSON.parse(text);
-      if (data.error) throw new Error(data.error);
-      staffList.innerHTML += `
-        <tr>
-          <td>${data.id}</td>
-          <td>${data.name}</td>
-          <td>${data.phone}</td>
-          <td>${data.role}</td>
-          <td>${parseFloat(data.salary).toLocaleString()} VND</td>
-          <td>${parseInt(data.day_off)}</td>
-          <td><button class="btn-edit" data-id="${data.id}">Sửa</button><button class="btn-delete" data-id="${data.id}">Xóa</button></td>
-        </tr>`;
-      addStaffDialog.close();
-      staffForm.reset();
-      document.getElementById('addSalaryInfo').textContent = '';
-    } catch (e) {
-      console.error('Lỗi khi parse JSON:', e.message);
-      throw new Error('Phản hồi từ server không phải JSON hợp lệ');
-    }
-  })
-  .catch(error => console.error('Lỗi khi thêm nhân viên:', error.message));
-});
-
+      fetch('/CafeManagement/api/add_staff.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStaff)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(`Lỗi HTTP ${res.status}: ${res.statusText}`);
+        return res.text(); // Sử dụng res.text() để debug phản hồi thô
+      })
+      .then(text => {
+        console.log('Phản hồi thô từ server:', text);
+        try {
+          const data = JSON.parse(text);
+          if (data.error) throw new Error(data.error);
+          staffList.innerHTML += `
+            <tr>
+              <td>${data.id}</td>
+              <td>${data.name}</td>
+              <td>${data.phone}</td>
+              <td>${data.role}</td>
+              <td>${parseFloat(data.salary).toLocaleString()} VND</td>
+              <td>${parseInt(data.day_off)}</td>
+              <td><button class="btn-edit" data-id="${data.id}">Sửa</button><button class="btn-delete" data-id="${data.id}">Xóa</button></td>
+            </tr>`;
+          addStaffDialog.close();
+          staffForm.reset();
+          document.getElementById('addSalaryInfo').textContent = '';
+        } catch (e) {
+          console.error('Lỗi khi parse JSON:', e.message);
+          throw new Error('Phản hồi từ server không phải JSON hợp lệ');
+        }
+      })
+      .catch(error => console.error('Lỗi khi thêm nhân viên:', error.message));
+    });
 
     // Mở dialog sửa nhân viên
     staffList.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-edit')) {
         const id = e.target.getAttribute('data-id');
-        fetch(`/CafeManagement (1)/api/get_staff.php?id=${id}`)
+        fetch(`/CafeManagement/api/get_staff.php?id=${id}`)
           .then(res => {
             if (!res.ok) throw new Error(`Lỗi HTTP ${res.status}: ${res.statusText}`);
             return res.json();
@@ -183,7 +182,7 @@ function calculateSalary(formType) {
         const confirmDelete = confirm('Bạn có chắc chắn muốn xóa nhân viên này không?');
         if (!confirmDelete) return; // Nếu người dùng chọn "Hủy", thì không xóa
 
-        fetch(`/CafeManagement (1)/api/delete_staff.php?id=${id}`, { method: 'DELETE' })
+        fetch(`/CafeManagement/api/delete_staff.php?id=${id}`, { method: 'DELETE' })
           .then(res => {
             if (!res.ok) throw new Error(`Lỗi HTTP ${res.status}: ${res.statusText}`);
             return res.json();
@@ -191,7 +190,6 @@ function calculateSalary(formType) {
           .then(() => e.target.closest('tr').remove())
           .catch(error => console.error('Lỗi khi xóa nhân viên:', error.message));
       }
-
     });
 
     // Đóng dialog sửa nhân viên
@@ -213,10 +211,10 @@ function calculateSalary(formType) {
         day_off: parseInt(document.getElementById('editDayOff').value)
       };
 
-      console.log('Gửi yêu cầu cập nhật đến:', '/CafeManagement (1)/api/update_staff.php');
+      console.log('Gửi yêu cầu cập nhật đến:', '/CafeManagement/api/update_staff.php');
       console.log('Dữ liệu gửi:', updatedStaff);
 
-      fetch('/CafeManagement (1)/api/update_staff.php', {
+      fetch('/CafeManagement/api/update_staff.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedStaff)
@@ -238,7 +236,7 @@ function calculateSalary(formType) {
             }
           });
 
-         if (rowToUpdate) {
+          if (rowToUpdate) {
             rowToUpdate.innerHTML = `
               <td>${data.id}</td>
               <td>${data.name}</td>

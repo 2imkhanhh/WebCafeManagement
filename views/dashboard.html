@@ -44,8 +44,16 @@
     import { initDrinksPage } from '../controller/DrinkController.js';
     import { initTablePage } from '../controller/TableController.js';
     import InvoiceController from '../controller/InvoiceController.js';
+
+    // Kiểm tra roleID để ẩn nút Quản lý nhân viên
+    const roleID = localStorage.getItem('roleID');
+    const staffButton = document.getElementById('btn-staff');
+    if (roleID == 2) {
+        staffButton.style.display = 'none'; // Ẩn nút Quản lý nhân viên
+    }
     
     document.getElementById('logout').addEventListener('click', function () {
+      localStorage.removeItem('roleID');
       window.location.href = '../views/login.html';
     });
 

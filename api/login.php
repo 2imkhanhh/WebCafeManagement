@@ -14,10 +14,17 @@ if (isset($data->email) && isset($data->password)) {
     $user = $model->checkLogin($email, $password);
 
     if ($user) {
-        echo json_encode(["success" => true, "user" => $user]);
+        echo json_encode([
+            "success" => true,
+            "user" => [
+                "email" => $user['Email'],
+                "roleID" => $user['roleID']
+            ]
+        ]);
     } else {
         echo json_encode(["success" => false, "message" => "Sai email hoặc mật khẩu"]);
     }
 } else {
     echo json_encode(["success" => false, "message" => "Thiếu thông tin"]);
 }
+?>

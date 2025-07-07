@@ -9,7 +9,7 @@ class AccountModel {
     }
 
     public function checkLogin($email, $password) {
-        $sql = "SELECT * FROM account WHERE Email = ? AND Password = ?";
+        $sql = "SELECT Email, Password, roleID FROM account WHERE Email = ? AND Password = ?";
         $stmt = $this->conn->prepare($sql);
         if (!$stmt) return null;
 
