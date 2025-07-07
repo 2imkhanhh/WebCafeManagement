@@ -1,53 +1,58 @@
-/* Reset và kiểu cơ bản */
-* {
+/* Reset và kiểu cơ bản - Giới hạn trong .category-container */
+.category-container * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
 }
 
-body {
-  background-color: #f0f2f5;
-  color: #333;
-  line-height: 1.6;
-  margin: 0;
-}
-
 .category-container {
   width: 100%;
   padding: 20px;
+  flex-grow: 1;
+  background-color: #f0f2f5; /* Giữ màu nền giống body */
+  color: #333;
+  line-height: 1.6;
 }
 
-h1 {
+/* Tiêu đề */
+.category-container h1 {
   font-size: 28px;
   color: #2c3e50;
   margin-bottom: 20px;
 }
 
-.controls {
+/* Điều khiển nút */
+.category-container .controls {
   margin-bottom: 20px;
+  text-align: left;
+  width: 100%;
 }
 
-#btnAddCategory {
-  padding: 10px 20px;
-  background-color: #3498db;
+.category-container #btnAddCategory {
+  padding: 10px 20px; /* Giảm padding để nút ngắn hơn, tham khảo .btn-add trong drinks.css */
+  background-color: #4CAF50; /* Màu xanh lá giống .btn-add */
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px; /* Bo góc giống .btn-add */
   cursor: pointer;
-  font-size: 16px;
+  font-weight: bold; /* Chữ đậm giống .btn-add */
+  width: auto; /* Không chiếm toàn bộ chiều rộng, để nút ngắn gọn */
+  display: inline-block; /* Đảm bảo nút không giãn toàn chiều rộng */
+  font-size: 16px; /* Kích thước chữ giống .btn-add */
+  transition: background-color 0.2s ease; /* Hiệu ứng hover giống .btn-add */
 }
 
-#btnAddCategory:hover {
-  background-color: #2980b9;
+.category-container #btnAddCategory:hover {
+  background-color: #45a049; /* Màu hover giống .btn-add */
 }
 
 /* Table styling */
-.table-wrapper {
+.category-container .table-wrapper {
   overflow-x: auto;
 }
 
-#categoryTable {
+.category-container #categoryTable {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
@@ -56,28 +61,29 @@ h1 {
   overflow: hidden;
 }
 
-#categoryTable th,
-#categoryTable td {
+.category-container #categoryTable th,
+.category-container #categoryTable td {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid #ddd;
 }
 
-#categoryTable th {
+.category-container #categoryTable th {
   background-color: #2c3e50;
   color: white;
   font-weight: 600;
 }
 
-#categoryTable tr:nth-child(even) {
+.category-container #categoryTable tr:nth-child(even) {
   background-color: #f8f9fa;
 }
 
-#categoryTable tr:hover {
+.category-container #categoryTable tr:hover {
   background-color: #e9ecef;
 }
 
-.btn-edit, .btn-delete {
+.category-container .btn-edit,
+.category-container .btn-delete {
   padding: 5px 10px;
   margin-right: 5px;
   border: none;
@@ -86,26 +92,26 @@ h1 {
   font-size: 14px;
 }
 
-.btn-edit {
+.category-container .btn-edit {
   background-color: #2ecc71;
   color: white;
 }
 
-.btn-edit:hover {
+.category-container .btn-edit:hover {
   background-color: #27ae60;
 }
 
-.btn-delete {
+.category-container .btn-delete {
   background-color: #e74c3c;
   color: white;
 }
 
-.btn-delete:hover {
+.category-container .btn-delete:hover {
   background-color: #c0392b;
 }
 
 /* Form overlay */
-.form-overlay {
+.category-container .form-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -118,35 +124,35 @@ h1 {
   z-index: 1000;
 }
 
-.form-content {
+.category-container .form-content {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
   width: 400px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: absolute; /* Đổi từ relative thành absolute */
+  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
-.form-content h2 {
+.category-container .form-content h2 {
   font-size: 20px;
   color: #2c3e50;
   margin-bottom: 15px;
 }
 
-.form-group {
+.category-container .form-group {
   margin-bottom: 15px;
 }
 
-.form-group label {
+.category-container .form-group label {
   display: block;
   font-weight: 600;
   margin-bottom: 5px;
 }
 
-.form-group input {
+.category-container .form-group input {
   width: 100%;
   padding: 8px;
   border: 1px solid #ddd;
@@ -154,12 +160,13 @@ h1 {
   font-size: 14px;
 }
 
-.form-actions {
+.category-container .form-actions {
   display: flex;
   gap: 10px;
 }
 
-#btnSave, #btnCancel {
+.category-container #btnSave,
+.category-container #btnCancel {
   padding: 8px 15px;
   border: none;
   border-radius: 4px;
@@ -167,20 +174,20 @@ h1 {
   font-size: 14px;
 }
 
-#btnSave {
+.category-container #btnSave {
   background-color: #3498db;
   color: white;
 }
 
-#btnSave:hover {
+.category-container #btnSave:hover {
   background-color: #2980b9;
 }
 
-#btnCancel {
+.category-container #btnCancel {
   background-color: #7f8c8d;
   color: white;
 }
 
-#btnCancel:hover {
+.category-container #btnCancel:hover {
   background-color: #6c757d;
 }
