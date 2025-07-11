@@ -21,6 +21,7 @@
         <button id="btn-orders">Quản lý đơn hàng</button>
         <button id="btn-invoices">Quản lý hoá đơn</button>
         <button id="btn-tables">Quản lý bàn</button>
+        <button id="btn-stastics">Thống kê</button>
         <button id="logout">Đăng xuất</button>
       </nav>
     </aside>
@@ -139,6 +140,33 @@
       })
       .catch(err => console.error('Lỗi khi tải hóa đơn:', err));
     });
+
+    document.getElementById('btn-stastics').addEventListener('click', () => {
+    fetch('../views/statistics.html')
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('main-content').innerHTML = html;
+
+      // Nạp Chart.js trước
+      const chartJsScript = document.createElement('script');
+      chartJsScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      chartJsScript.onload = () => {
+        // Khi Chart.js xong mới nạp statistics.js
+        const statScript = document.createElement('script');
+        statScript.src = '../controller/statistics.js';
+        statScript.onload = () => {
+          if (typeof initStatisticsPage === 'function') {
+            initStatisticsPage();
+          } else {
+            console.error('initStatisticsPage không được định nghĩa');
+          }
+        };
+        document.body.appendChild(statScript);
+      };
+      document.body.appendChild(chartJsScript);
+    })
+    .catch(err => console.error('Lỗi khi tải statistics.html:', err));
+  });
   </script>
 </body>
 </html>

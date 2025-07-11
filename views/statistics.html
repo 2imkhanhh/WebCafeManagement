@@ -1,0 +1,26 @@
+<meta charset="UTF-8">
+<style>
+#chartCanvas {
+  min-height: 400px;
+}
+.chart-container {
+  height: 400px; /* Đặt chiều cao cố định để chart không bị co */
+}
+</style>
+
+<h1 style="margin-bottom: 20px; font-size: 24px; text-align: center;">
+  Thống kê doanh thu theo tháng
+</h1>
+
+<div style="text-align: center; margin-bottom: 20px;">
+  <label for="monthSelect" style="font-weight: bold;">Chọn tháng:</label>
+  <select id="monthSelect" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #ccc;">
+    <!-- JS sẽ đổ dữ liệu -->
+  </select>
+</div>
+
+<div class="chart-container" style="max-width: 800px; margin: 0 auto; background: #fff; padding: 15px; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+  <canvas id="chartCanvas" style="width: 100% !important; height: auto !important;"></canvas>
+</div>
+
+
