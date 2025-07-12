@@ -105,6 +105,14 @@ function openEditPopup(mainContent, table) {
   form.querySelector('#editTableStatus').value = table.Status;
   form.querySelector('#editTableOrderID').value = table.orderID || '';
 
+  const isOccupied = table.Status === 'on' && table.orderID && table.orderID > 0;
+  if (isOccupied) {
+    form.querySelector('#editTableStatus').disabled = true; 
+    form.querySelector('#editTableStatus').title = 'Không thể sửa trạng thái khi bàn có khách'; 
+  } else {
+    form.querySelector('#editTableStatus').disabled = false; 
+  }
+
   editForm.showModal();
 
   const cancelBtn = mainContent.querySelector('#btnCancelEditTable');
@@ -113,9 +121,6 @@ function openEditPopup(mainContent, table) {
   form.onsubmit = function (e) {
     e.preventDefault();
     const formData = new URLSearchParams(new FormData(form));
-    // const orderID = form.querySelector('#editTableOrderID').value || null;
-
-    // if (orderID) formData.append('orderID', orderID);
 
     fetch('../api/update_table.php', {
       method: 'POST',
@@ -208,7 +213,6 @@ function showOrderDetails(mainContent, tableId, orderId) {
           <p>Tổng tiền: ${parseInt(order.totalPrice).toLocaleString()}đ</p>
         `;
 
-        // ✅ Nút thanh toán bên trong phạm vi order
         const payBtn = document.createElement('button');
         payBtn.textContent = 'Thanh toán';
         payBtn.className = 'btn-save';

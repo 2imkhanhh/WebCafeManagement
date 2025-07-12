@@ -5,7 +5,7 @@ try {
     require_once('../config/database.php');
     require_once('../model/InvoiceModel.php');
     require_once('../model/TableModel.php');
-    require_once('../model/OrderModel.php'); // Thêm để cập nhật trạng thái đơn hàng
+    require_once('../model/OrderModel.php'); 
 
     $db = new Database();
     $conn = $db->getConnection();
@@ -19,10 +19,8 @@ try {
         exit;
     }
 
-    // Bắt đầu transaction để đảm bảo tính nhất quán
     $conn->begin_transaction();
 
-    // Tạo hóa đơn
     $success = InvoiceModel::createInvoice($conn, $orderID, $tableID, $total);
 
     if ($success) {
@@ -40,21 +38,21 @@ try {
         // Cập nhật trạng thái bàn về off
         TableModel::clearTableAfterPayment($conn, $tableID);
 
-        $conn->commit(); // Commit transaction
+        $conn->commit(); 
 
         echo json_encode([
             'success' => true,
             'message' => 'Tạo hóa đơn và thanh toán thành công'
         ]);
     } else {
-        $conn->rollback(); // Rollback nếu có lỗi
+        $conn->rollback(); 
         echo json_encode([
             'success' => false,
             'message' => 'Tạo hóa đơn thất bại'
         ]);
     }
 } catch (Exception $e) {
-    $conn->rollback(); // Rollback nếu có exception
+    $conn->rollback(); 
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

@@ -1,4 +1,3 @@
-/* =================== CẤU TRÚC CHUNG =================== */
 .order-container {
   padding: 20px;
   background-color: #fff;
@@ -9,7 +8,6 @@
   border-radius: 10px;
 }
 
-/* Tiêu đề và nút thêm cố định trên cùng */
 #order-section {
   display: flex;
   flex-direction: column;
@@ -27,7 +25,6 @@
   background-color: #fff;
   z-index: 2;
   padding: 10px 0;
-  /* border-bottom: 1px solid #eee; */ /* ĐÃ XOÁ gạch dưới */
 }
 
 #btnShowOrderForm {
@@ -62,7 +59,7 @@
 .order-item {
   border: 1px solid #ccc;
   border-radius: 10px;
-  background-color: #f0f0f0; /* Màu nền xám */
+  background-color: #f0f0f0; 
   padding: 10px;
   text-align: center;
   transition: transform 0.2s ease;

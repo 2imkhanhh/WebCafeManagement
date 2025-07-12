@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 try {
     require_once("../config/database.php");
     require_once("../model/OrderModel.php");
-    require_once("../model/TableModel.php"); // Đảm bảo file này tồn tại
+    require_once("../model/TableModel.php"); 
 
     $db = new Database();
     $conn = $db->getConnection();
@@ -31,7 +31,7 @@ try {
     if ($success) {
         if ($tableID) {
             // Cập nhật lại trạng thái bàn và orderID về 0
-            $success = TableModel::updateTableStatus($conn, $tableID, 'off'); // Kiểm tra hàm này
+            $success = TableModel::updateTableStatus($conn, $tableID, 'off'); 
             if (!$success) {
                 throw new Exception("Cập nhật trạng thái bàn thất bại");
             }
@@ -46,7 +46,7 @@ try {
     }
 } catch (Exception $e) {
     http_response_code(500);
-    error_log("Lỗi khi xóa đơn hàng: " . $e->getMessage()); // Log lỗi để debug
+    error_log("Lỗi khi xóa đơn hàng: " . $e->getMessage()); 
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

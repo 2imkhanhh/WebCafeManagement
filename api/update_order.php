@@ -17,7 +17,7 @@ try {
     $orderID = $input['orderID'] ?? null;
     $orderDate = $input['orderDate'] ?? null;
     $totalPrice = $input['totalPrice'] ?? null;
-    $status = null; // Không sử dụng input status
+    $status = null; 
     $tableID = $input['tableID'] ?? null;
     $items = $input['items'] ?? [];
 
